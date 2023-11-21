@@ -1,102 +1,85 @@
-/********************************************************************************
- * Code for read data from Wii nunchuck., base on http://www.windmeadow.com/node/42
- * File : ArduinoNunchuk.pde
- * by : K.Worapoht
- * Hardware: Arduino, POP-168 , AVR ATMega168 ,
- * connect SDA to PC4 (An4) and SCL PC5 (An5)
- *******************************************************************************/
-#include <Wire.h>
-#define nunchuk_ID 0xA4 >> 1
-unsigned char buffer[6];// array to store arduino output
-int cnt = 0;
-void setup ()
-{
- Serial.begin (9600);
- Wire.begin (); // join i2c bus with address 0x52
- nunchuck_init (); // send the initilization handshake
- delay (100);
+#include <avr/interrupt.h>
+#include <HardwareSerial.h>
+#include <Arduino.h>
+#include <IRremote.h>
+
+
+volatile bool flag = false;
+
+void sendNEC(unsigned int data) {
+    
+   if(flag)
+   {
+    Serial.print("1");
+   } else {
+    Serial.print("0");
+   }
+
+   if (data == 1) {
+    // Verzend een logische '1'
+    TCCR1A |= (1 << COM1A0); // Zet de pin op HIGH (mark)
+    // digitalWrite(9, HIGH);
+    PORTB |= (1<< PB1);
+    // delayMicroseconds(500);
+    _delay_us(500);
+  } else {
+    // Verzend een logische '0'  
+    TCCR1A &= ~(1 << COM1A0); // Zet de pin op LOW (space)
+    // digitalWrite(9,LOW);
+    PORTB &= ~(1<<PB1);
+    // delayMicroseconds(1500); // Bijvoorbeeld: houd de bit voor 500 µs aan (kan aangepast worden)
+    _delay_us(1500);
+  }
+  
 }
-void nunchuck_init ()
+
+ISR(INT0_vect)
 {
- Wire.beginTransmission (nunchuk_ID); // transmit to device 0x52
- Wire.send (0x40); // sends memory address
- Wire.send (0x00); // sends sent a zero.
- Wire.endTransmission (); // stop transmitting
-}
-void send_zero ()
-{
- Wire.beginTransmission (nunchuk_ID); // transmit to device 0x52
- Wire.send (0x00); // sends one byte
- Wire.endTransmission (); // stop transmitting
-}
-void loop ()
-{
- Wire.requestFrom (nunchuk_ID, 6); // request data from nunchuck
- while (Wire.available ())
+  uint8_t pinstatus = (PIND & (1<<PD2));
+ if(pinstatus)
  {
- buffer[cnt] = nunchuk_decode_byte (Wire.receive ()); // receive byte as an integer
- cnt++;
+
+    flag = true;
+ } else {
+
+    flag = false;
  }
- // If we recieved the 6 bytes, then go print them
- if (cnt >= 5)
- {
- print ();
- }
- cnt = 0;
- send_zero (); // send the request for next bytes
- delay (100);
 }
-// Print the input data we have recieved
-// accel data is 10 bits long
-// so we read 8 bits, then we have to add
-// on the last 2 bits.
-void print ()
+
+ISR(TIMER1_COMPA_vect)
 {
- unsigned char joy_x_axis;
- unsigned char joy_y_axis;
- int accel_x_axis;
- int accel_y_axis;
- int accel_z_axis;
- unsigned char z_button;
- unsigned char c_button;
- joy_x_axis = buffer[0];
- joy_y_axis = buffer[1];
- accel_x_axis = (buffer[2]) << 2;
- accel_y_axis = (buffer[3]) << 2;
- accel_z_axis = (buffer[4]) << 2;
- // byte outbuf[5] contains bits for z and c buttons
- // it also contains the least significant bits for the accelerometer data
- // so we have to check each bit of byte outbuf[5]
- if ((buffer[5] & 0x01)!=0)
- { z_button = 1; }
- else
- { z_button = 0; }
- if ((buffer[5] & 0x02)!=0)
-  { c_button = 1; }
- else
- { c_button = 0; }
- accel_x_axis += ((buffer[5]) >> 2) & 0x03;
- accel_y_axis += ((buffer[5]) >> 4) & 0x03;
- accel_z_axis += ((buffer[5]) >> 6) & 0x03;
- Serial.print (joy_x_axis, DEC);
- Serial.print ("\t");
- Serial.print (joy_y_axis, DEC);
- Serial.print ("\t");
- Serial.print (accel_x_axis, DEC);
- Serial.print ("\t");
- Serial.print (accel_y_axis, DEC);
- Serial.print ("\t");
- Serial.print (accel_z_axis, DEC);
- Serial.print ("\t");
- Serial.print (z_button, DEC);
- Serial.print ("\t");
- Serial.print (c_button, DEC);
- Serial.print ("\r\n");
+
 }
-// Encode data to format that most wiimote drivers except
-// only needed if you use one of the regular wiimote drivers
-char nunchuk_decode_byte (char x)
+
+int main(void)
 {
- x = (x ^ 0x17) + 0x17;
- return x;
+    Serial.begin(9600);
+
+    DDRB |= (1<<DDB1); // ir led
+    
+    OCR1A = 208; // compare match for 38KHZ increments
+    TCCR1B |= (1<<WGM12); // ctc mode
+    TCCR1B |= (1<<CS10); // no prescaler
+    TIMSK1 |= (1<<OCIE1A); // enable timer compare interrupt
+
+    TCCR1A &= ~(1<<COM1A0); // disable  -> toggle OC1A pin 9 on compare match
+
+    // external interrupt
+
+    EIMSK |= (1<<INT0); // int0 external interrupt aan
+    EICRA |= (1<<ISC00); // any logical change generate interrupt
+
+    sei(); // enable global interrupts
+
+    while(1)
+    {
+
+        sendNEC(1); // Voorbeeld: Verstuur een testsignaal met waarde 0x00FF  
+        // delay(10); //
+        sendNEC(0);
+        // delay(10);
+        
+
+    }
+    return 0;
 }
