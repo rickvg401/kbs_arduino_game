@@ -31,10 +31,13 @@ const uint16_t BLACK = ILI9341_BLACK;
 int main()
 {
   setupTimer();
+
   tft.begin();
   tft.setRotation(1);
-  tft.fillScreen(ILI9341_BLACK);
+  tft.fillScreen(BLACK);
+
   sei();
+
   while(1);
 }
 
@@ -42,6 +45,7 @@ int main()
 void setupTimer()
 {
   uint16_t c = ((F_CPU / 1024) / GAMECLOCK ) - 1;
+
   TCCR1B = (1 << WGM12);
   OCR1AH = (c >> 8);
   OCR1AL = c;
@@ -51,19 +55,15 @@ void setupTimer()
 
 ISR(TIMER1_COMPA_vect)
 {
-  tft.fillRect(ballX, ballY, ballWidth, ballHeight, BLACK); // Redraw
-  if (ballX + ballWidth > MAX_WIDTH)
-    velX *= -1;
-  else if (ballX < 0)
+  tft.fillRect(ballX, ballY, ballWidth, ballHeight, BLACK);
+  if (ballX + ballWidth > MAX_WIDTH || ballX < 0)
     velX *= -1;
   
-  if (ballY + ballHeight > MAX_HEIGHT)
-    velY *= -1;
-  else if (ballY < 0)
+  if (ballY + ballHeight > MAX_HEIGHT || ballY < 0)
     velY *= -1;
   
   ballX += velX;
   ballY += velY;
 
-  tft.fillRect(ballX, ballY, ballWidth, ballHeight, BALL_COLOR); // Redraw
+  tft.fillRect(ballX, ballY, ballWidth, ballHeight, BALL_COLOR);
 }
