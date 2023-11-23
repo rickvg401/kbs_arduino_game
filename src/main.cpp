@@ -11,9 +11,10 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 //testing
 uint8_t ball_Pos_X = 100;//testing
 uint8_t ball_Pos_Y = 100;//testing
-const uint8_t ball_radius = 50;//testing
+const uint8_t ball_radius = 10;//testing
 bool testBool1 = true;//testing 
 bool testBool2 = true;//testing
+
 
 
 
@@ -68,16 +69,45 @@ void updateBallPos(){//testing
 }
 
 
+
+
+void drawPlayer(uint8_t x, uint8_t y){
+    tft.fillRect(x,y,25,25,ILI9341_DARKCYAN);
+}
+
+void drawPath(uint8_t x, uint8_t y){
+    tft.fillRect(x,y,25,25,ILI9341_BLACK);
+}
+
+void movePlayer(uint8_t oldX,uint8_t oldY,uint8_t newX,uint8_t newY){
+    drawPath(oldX,oldY);
+    drawPlayer(newX,newY);
+}
+
+void drawLevel(){
+    for(int i=0;i<100;i+=25){
+        drawPath(i,200);
+    }
+}
 int main(){
     setupDisplay();
     tft.fillScreen(ILI9341_RED);
+    // tft.fillRect(100,100,100,100,ILI9341_ORANGE);
+    drawLevel();
+    drawPlayer(100,200);
+
     while(true){
         
         //scrappy bouncing ball
-        tft.fillScreen(ILI9341_BLUE);
-        tft.fillCircle(ball_Pos_X,ball_Pos_Y,ball_radius,ILI9341_GREEN);
+        // tft.fillScreen(ILI9341_BLUE);
+        movePlayer(100,200,300,100);
+        _delay_ms(50);
+        movePlayer(300,100,100,200);
+        _delay_ms(50);
+
+
+
         updateBallPos();
-        _delay_ms(100);
 
     }  
 return 0;
