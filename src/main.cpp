@@ -6,30 +6,45 @@
 
 volatile bool flag = false;
 
-void sendNEC(unsigned int data) {
-    
-   if(flag)
-   {
-    Serial.print("1");
-   } else {
-    Serial.print("0");
-   }
+void sendNEC(uint8_t data) {
+  uint8_t data1 = data;
 
-   if (data == 1) {
-    // Verzend een logische '1'
-    TCCR1A |= (1 << COM1A0); // Zet de pin op HIGH (mark)
-    // digitalWrite(9, HIGH);
-    PORTB |= (1<< PB1);
-    // delayMicroseconds(500);
-    _delay_us(500);
-  } else {
-    // Verzend een logische '0'  
-    TCCR1A &= ~(1 << COM1A0); // Zet de pin op LOW (space)
-    // digitalWrite(9,LOW);
-    PORTB &= ~(1<<PB1);
-    // delayMicroseconds(1500); // Bijvoorbeeld: houd de bit voor 500 µs aan (kan aangepast worden)
-    _delay_us(1500);
-  }
+    for (uint8_t i = 0; i < 8; i++)
+    {
+      
+
+      if (data1 & (0b00000001))
+      {
+        // Verzend een logische '1'
+        TCCR1A |= (1 << COM1A0); // Zet de pin op HIGH (mark)
+        // digitalWrite(9, HIGH);
+        PORTB |= (1 << PB1);
+        // delayMicroseconds(500);
+
+        _delay_us(500);
+      }
+      else
+      {
+        // Verzend een logische '0'
+        TCCR1A &= ~(1 << COM1A0); // Zet de pin op LOW (space)
+        // digitalWrite(9,LOW);
+        PORTB &= ~(1 << PB1);
+        // delayMicroseconds(1500); // Bijvoorbeeld: houd de bit voor 500 µs aan (kan aangepast worden)
+
+        _delay_us(500);
+      }
+      data1 = data1 >> 1;
+      if (flag)
+      {
+        Serial.print("1");
+      }
+      else
+      {
+        Serial.print("0");
+      }
+    }
+    Serial.println(" einde ");
+
   
 }
 
@@ -40,6 +55,7 @@ ISR(INT0_vect)
  {
 
     flag = true;
+    // counter opslaan 
  } else {
 
     flag = false;
@@ -48,7 +64,8 @@ ISR(INT0_vect)
 
 ISR(TIMER1_COMPA_vect)
 {
-
+  // counter altijd ophogen 
+  // 
 }
 
 int main(void)
@@ -73,10 +90,11 @@ int main(void)
 
     while(1)
     {
-
-        sendNEC(1); // Voorbeeld: Verstuur een testsignaal met waarde 0x00FF  
+        uint8_t data = 0b00001101;
+        sendNEC(data); // Voorbeeld: Verstuur een testsignaal met waarde 0x00FF  
+        _delay_ms(1000);
         // delay(10); //
-        sendNEC(0);
+        // sendNEC(1);
         // delay(10);
         
 
