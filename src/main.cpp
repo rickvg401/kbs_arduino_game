@@ -16,7 +16,7 @@
 #define nunchuk_ID 0xA4 >> 1
 // unsigned char buffer[4];// array to store arduino output
 uint8_t NunChuckPosition[4];
-bool NunChuckPositionDivided = true;
+bool NunChuckPositionDivided = false;
 
 /*display*/
 #define TFT_DC 9
@@ -189,6 +189,17 @@ void movePlayer(uint8_t newX,uint8_t newY){
     drawPlayer(newX,newY);
 }
 
+
+void movePlayerNunchuk(){
+    drawPath(playerPosX,playerPosY);
+    
+    
+    uint8_t newX = playerPosX + ((NunChuckPosition[0]-128)/100*1);
+    uint8_t newY = playerPosY + ((NunChuckPosition[1]-128)/100*1);
+
+    drawPlayer(newX,newY);
+}
+
 void drawLevel(){
     // for(int i=0;i<100;i+=25){
     //     drawPath(i,200);
@@ -200,10 +211,12 @@ void getNunchukPosition(){
     if(!Nunchuk.getState(nunchuk_ID)){
         return;
     } 
+    
     uint8_t x = Nunchuk.state.joy_x_axis;
     uint8_t y = Nunchuk.state.joy_y_axis;
     uint8_t c = Nunchuk.state.c_button;
     uint8_t z = Nunchuk.state.z_button;
+    
     
 
     if(NunChuckPositionDivided){
@@ -213,7 +226,7 @@ void getNunchukPosition(){
             NunChuckPosition[0] = 128;
         }
         if(y != 128){
-                NunChuckPosition[1] = y>128 ? 50 : 200;} 
+                NunChuckPosition[1] = y>128 ? 200 : 50;} 
         else{
                 NunChuckPosition[1] = 128;
         }
@@ -277,7 +290,8 @@ int main(void)
         } 
 
         Serial.println(pulseDuration);
-        movePlayer(NunChuckPosition[1],NunChuckPosition[0]);
+        // movePlayer(NunChuckPosition[1],NunChuckPosition[0]);
+        movePlayerNunchuk();
         
     } 
     return 0;
