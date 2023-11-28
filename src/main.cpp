@@ -2,11 +2,6 @@
 #include <Wire.h>
 #include <Arduino.h>
 #include <Nunchuk.h>
-
-
-#include <Wire.h>
-#include <Arduino.h>
-#include <Nunchuk.h>
 #include "SPI.h"
 #include "display/Adafruit-GFX/Adafruit_GFX.h"
 #include "display/Adafruit_ILI9341.h"
@@ -153,53 +148,6 @@ void initIR()
     EIMSK |= (1<<INT0); // int0 external interrupt aan
     EICRA |= (1<<ISC00); // any logical change generate interrupt
 
-    sei(); // enable global interrupts
-}
-
-int main(void)
-{
-    // Serial.begin(9600);
-
-    initIR(); // initialize infrarood 
-    #ifdef SerialActive
-    Serial.begin(BAUDRATE);
-    #endif
-    Wire.begin();
-
-    if(!setupNunchuck()){return 0;}
-    if(!setupDisplay()){return 0;}
-
-
-    tft.fillScreen(ILI9341_RED);
-    // drawLevel();
-    drawPlayer(128,128);
-    while(1)
-    {
-        // uint8_t data = 0b00001101;
-        // sendNEC(data); // Voorbeeld: Verstuur een testsignaal met waarde 0x00FF  
-        
-      // nunchuck en display
-        getNunchukPosition();
-        if(!NunChuckPosition[2])
-        {
-          
-          sendNEC(1);
-        } else if( !NunChuckPosition[3]) {
-          
-          sendNEC(0);
-        }
-        if(eenofnull == 1)
-        {
-          PCF8574_write(0b11111111);
-        } else if(eenofnull == 0) {
-          PCF8574_write((0b00000000));
-        } 
-
-        Serial.println(pulseDuration);
-        // movePlayer(NunChuckPosition[1],NunChuckPosition[0]);
-        
-    } 
-    return 0;
 }
 
 
@@ -293,12 +241,11 @@ void PCF8574_write(byte bytebuffer)
 }
 
 
-int main(){
-
-
+int main(void)
+{
     sei();
     #ifdef SerialActive
-        Serial.begin(BAUDRATE);
+    Serial.begin(BAUDRATE);
     #endif
     Wire.begin();
 
@@ -309,13 +256,29 @@ int main(){
     tft.fillScreen(ILI9341_RED);
     // drawLevel();
     drawPlayer(128,128);
-
-
-    while(true){
+    while(1)
+    {
+        // uint8_t data = 0b00001101;
+        // sendNEC(data); // Voorbeeld: Verstuur een testsignaal met waarde 0x00FF  
+        
+      // nunchuck en display
         getNunchukPosition();
+        if(!NunChuckPosition[2])
+        {
+          sendNEC(1);
+        } else if( !NunChuckPosition[3]) {
+          sendNEC(0);
+        }
+        if(eenofnull == 1)
+        {
+          PCF8574_write(0b11111111);
+        } else if(eenofnull == 0) {
+          PCF8574_write((0b00000000));
+        } 
 
+        Serial.println(pulseDuration);
         movePlayer(NunChuckPosition[1],NunChuckPosition[0]);
-
-    }  
+        
+    } 
     return 0;
 }
