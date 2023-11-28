@@ -2,6 +2,12 @@
 #include <Wire.h>
 #include <Arduino.h>
 #include <Nunchuk.h>
+
+
+#include <Wire.h>
+#include <Arduino.h>
+#include <Nunchuk.h>
+#include "SPI.h"
 #include "display/Adafruit-GFX/Adafruit_GFX.h"
 #include "display/Adafruit_ILI9341.h"
 #include <util/delay.h>
@@ -10,6 +16,7 @@
 //serial
 #define SerialActive //if defined serial is active
 #define BAUDRATE 9600
+
 //nunchuk
 #define nunchuk_ID 0xA4 >> 1
 // unsigned char buffer[4];// array to store arduino output
@@ -24,6 +31,7 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 //game
 uint8_t playerPosX;
 uint8_t playerPosY;
+
 
 // 7 segment display
 #define PCF8574_i2cAdr 0x21
@@ -276,6 +284,7 @@ void getNunchukPosition(){
     
 }
 
+
 void PCF8574_write(byte bytebuffer)
 {
   Wire.beginTransmission(PCF8574_i2cAdr);
@@ -283,3 +292,30 @@ void PCF8574_write(byte bytebuffer)
   Wire.endTransmission();
 }
 
+
+int main(){
+
+
+    sei();
+    #ifdef SerialActive
+        Serial.begin(BAUDRATE);
+    #endif
+    Wire.begin();
+
+    if(!setupNunchuck()){return 0;}
+    if(!setupDisplay()){return 0;}
+
+
+    tft.fillScreen(ILI9341_RED);
+    // drawLevel();
+    drawPlayer(128,128);
+
+
+    while(true){
+        getNunchukPosition();
+
+        movePlayer(NunChuckPosition[1],NunChuckPosition[0]);
+
+    }  
+    return 0;
+}
