@@ -1,3 +1,8 @@
+#include <avr/interrupt.h>
+#include <Wire.h>
+#include <Arduino.h>
+#include <Nunchuk.h>
+
 
 #include <Wire.h>
 #include <Arduino.h>
@@ -6,6 +11,7 @@
 #include "display/Adafruit-GFX/Adafruit_GFX.h"
 #include "display/Adafruit_ILI9341.h"
 #include <util/delay.h>
+
 
 //serial
 #define SerialActive //if defined serial is active
@@ -27,6 +33,174 @@ uint8_t playerPosX;
 uint8_t playerPosY;
 
 
+// 7 segment display
+#define PCF8574_i2cAdr 0x21
+void PCF8574_write(byte bytebuffer);
+byte PCF8574_read();
+byte bits;
+
+// boolean voor het printen straks niet meer nodig
+volatile bool flag = false;
+
+// infrared vars
+volatile uint16_t prevCounterValue = 0;
+volatile uint16_t currentCounterValue;
+volatile uint16_t pulseDuration;
+volatile uint8_t eenofnull;
+volatile uint16_t counter = 0;
+
+bool setupDisplay();
+bool setupNunchuck();
+void drawPlayer(uint8_t x, uint8_t y);
+void drawPath(uint8_t x, uint8_t y);
+void movePlayer(uint8_t newX,uint8_t newY);
+void drawLevel();
+void getNunchukPosition();
+void PCF8574_write(byte bytebuffer);
+
+
+void sendNEC(uint8_t data) {
+  uint8_t data1 = data;
+
+    // for (uint8_t i = 0; i < 8; i++)
+    // {
+
+      // if (data1 & (0x01)) voor bytes
+      if(data1 == 1)
+      {
+        // Verzend een logische '1'
+        TCCR0A |= (1<< COM0A0);
+        PORTD |= (1<< PD6);
+        _delay_us(1700); // houd dit bit voor 1700 us aan // BUSY WAITING WORDT VERANDERT IN SPRINT 2
+
+      }
+      else
+      {
+        // Verzend een logische '0'
+        TCCR0A |= (1<<COM0A0); // toggle de pin met 38KHZ
+        PORTD |= (1<< PD6); // pin naar high zetten
+        _delay_us(700); // houd dit bit voor 700 us aan // BUSY WAITING WORDT VERANDERT IN SPRINT 2
+
+      }
+      // data1 = data1 >> 1; // voor bytes
+      // Verzend een logische '0'
+
+        TCCR0A &= ~(1<< COM0A0);
+        PORTD &= ~(1<<PD6);
+    // }
+    Serial.println(" einde ");
+  
+}
+
+ISR(INT0_vect)
+{
+  uint8_t pinstatus = (PIND & (1<<PD2));
+  
+ if(pinstatus)
+ {
+
+    
+    // opgaande flank bepaal je het verschil tussen huidige counterstand en de onthouden counterstand
+    // Je hebt dan gemeten hoe lang de puls duurde. Daarmee kan je
+    // bepalen of het uitgezonden bit een 0 of een 1 was. Schuif dit
+    // bit in het resulterende buffer.
+     currentCounterValue = counter;
+     pulseDuration = currentCounterValue - prevCounterValue;
+    if(pulseDuration > 169 && pulseDuration < 178) {
+      // Voeg '1' toe aan buffer
+      flag = true;
+      eenofnull = 1;
+    } else if (pulseDuration < 76 && pulseDuration > 70) {
+      // Voeg '0' toe aan buffer
+      flag = false;
+      eenofnull = 0;
+    }
+
+ } else {
+    
+    
+    // bij een neergaande flank onthouden counter van timer 1
+    prevCounterValue = counter;
+    eenofnull = -1;
+ }
+}
+
+ISR(TIMER0_COMPA_vect)
+{
+  // counter altijd ophogen 
+  // counter hier altijd ophogen 
+  counter++;
+  if(counter > 100000){
+    counter = 0;
+  }
+}
+
+void initIR()
+{
+    DDRD |= (1<<DDD6); // ir led op gameshield
+
+    // TCCR1A &= ~(1<<COM1A0); // disable  -> toggle OC1A pin 9 on compare match
+
+    // timer 0 voor irled
+    OCR0A = 208;
+    TCCR0A |= (1<<WGM01);
+    TCCR0B |= (1<<CS00); // no prescaler
+    TIMSK0 |= (1<<OCIE0A); // enable timer compare interrupt
+
+    TCCR0A &= ~(1<<COM0A0);// toggle OC0A pin 6
+
+    // external interrupt
+    EIMSK |= (1<<INT0); // int0 external interrupt aan
+    EICRA |= (1<<ISC00); // any logical change generate interrupt
+
+    sei(); // enable global interrupts
+}
+
+int main(void)
+{
+    // Serial.begin(9600);
+
+    initIR(); // initialize infrarood 
+    #ifdef SerialActive
+    Serial.begin(BAUDRATE);
+    #endif
+    Wire.begin();
+
+    if(!setupNunchuck()){return 0;}
+    if(!setupDisplay()){return 0;}
+
+
+    tft.fillScreen(ILI9341_RED);
+    // drawLevel();
+    drawPlayer(128,128);
+    while(1)
+    {
+        // uint8_t data = 0b00001101;
+        // sendNEC(data); // Voorbeeld: Verstuur een testsignaal met waarde 0x00FF  
+        
+      // nunchuck en display
+        getNunchukPosition();
+        if(!NunChuckPosition[2])
+        {
+          
+          sendNEC(1);
+        } else if( !NunChuckPosition[3]) {
+          
+          sendNEC(0);
+        }
+        if(eenofnull == 1)
+        {
+          PCF8574_write(0b11111111);
+        } else if(eenofnull == 0) {
+          PCF8574_write((0b00000000));
+        } 
+
+        Serial.println(pulseDuration);
+        // movePlayer(NunChuckPosition[1],NunChuckPosition[0]);
+        
+    } 
+    return 0;
+}
 
 
 bool setupDisplay(){
@@ -111,6 +285,14 @@ void getNunchukPosition(){
 }
 
 
+void PCF8574_write(byte bytebuffer)
+{
+  Wire.beginTransmission(PCF8574_i2cAdr);
+  Wire.write(bytebuffer);
+  Wire.endTransmission();
+}
+
+
 int main(){
 
 
@@ -127,39 +309,6 @@ int main(){
     tft.fillScreen(ILI9341_RED);
     // drawLevel();
     drawPlayer(128,128);
-
-    
-
-    /*
-    while(1){
-        if(!Nunchuk.getState(nunchuk_ID)){
-            return (1);
-        } 
-
-
-        int x = Nunchuk.state.joy_x_axis;
-	    int y = Nunchuk.state.joy_y_axis;
-        int c = Nunchuk.state.c_button;
-        int z = Nunchuk.state.z_button;
-        const char* uitkomst[4];
-        if(x != 128){
-            uitkomst[0] = x<128 ? "links-" : "rechts-";}
-        else{
-            uitkomst[0] = "midden-";
-        }
-        if(y != 128){
-                uitkomst[1] = y>128 ? "boven-" : "onder-";} 
-        else{
-                uitkomst[1] = "midden-";
-        }
-        uitkomst[2] = c ? "cin-" : "cout-";
-        uitkomst[3] = z ? "zin" : "zout";
-        for(int i = 0;i<4;i++){
-            Serial.print(uitkomst[i]);
-        }
-        Serial.println(" ");
-    }*/
-
 
 
     while(true){
