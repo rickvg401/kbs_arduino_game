@@ -24,8 +24,8 @@ bool NunChuckPositionDivided = false;
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
 //game
-uint8_t playerPosX;
-uint8_t playerPosY;
+uint16_t playerPosX;
+uint16_t playerPosY;
 
 
 // 7 segment display
@@ -46,9 +46,10 @@ volatile uint16_t counter = 0;
 
 bool setupDisplay();
 bool setupNunchuck();
-void drawPlayer(uint8_t x, uint8_t y);
-void drawPath(uint8_t x, uint8_t y);
-void movePlayer(uint8_t newX,uint8_t newY);
+void drawPlayer(uint16_t x, uint16_t y);
+void drawPath(uint16_t x, uint16_t y);
+void movePlayer(uint16_t newX,uint16_t newY);
+void movePlayerNunchuk();
 void drawLevel();
 void getNunchukPosition();
 void PCF8574_write(byte bytebuffer);
@@ -154,7 +155,6 @@ void initIR()
 bool setupDisplay(){
     //returned if setup is correctly completed
     tft.begin();
-    // tft.setRotation(1);
     return true;
 }
 
@@ -175,17 +175,17 @@ bool setupNunchuck(){
 
 
 
-void drawPlayer(uint8_t x, uint8_t y){
+void drawPlayer(uint16_t x, uint16_t y){
     tft.fillRect(x,y,25,25,ILI9341_DARKCYAN);
     playerPosX = x;
     playerPosY = y;
 }
 
-void drawPath(uint8_t x, uint8_t y){
+void drawPath(uint16_t x, uint16_t y){
     tft.fillRect(x,y,25,25,ILI9341_BLACK);
 }
 
-void movePlayer(uint8_t newX,uint8_t newY){
+void movePlayer(uint16_t newX,uint16_t newY){
     drawPath(playerPosX,playerPosY);
     drawPlayer(newX,newY);
 }
@@ -195,8 +195,8 @@ void movePlayerNunchuk(){
     drawPath(playerPosX,playerPosY);
     
     
-    uint8_t newX = playerPosX + ((NunChuckPosition[0]-128)/100*1);
-    uint8_t newY = playerPosY + ((NunChuckPosition[1]-128)/100*1);
+    uint16_t newX = playerPosX + ((NunChuckPosition[0]-128)/100*1);
+    uint16_t newY = playerPosY + ((NunChuckPosition[1]-128)/100*1);
 
     drawPlayer(newX,newY);
 }
@@ -276,6 +276,8 @@ int main(void)
     tft.fillScreen(ILI9341_RED);
     // drawLevel();
     drawPlayer(128,128);
+    // drawPath(100,128);
+
     while(1)
     {
         // uint8_t data = 0b00001101;
