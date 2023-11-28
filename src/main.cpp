@@ -263,6 +263,7 @@ void PCF8574_write(byte bytebuffer)
 
 int main(void)
 {
+    initIR();
     sei();
     #ifdef SerialActive
     Serial.begin(BAUDRATE);
