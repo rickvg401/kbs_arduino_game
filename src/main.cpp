@@ -154,6 +154,7 @@ void initIR()
 bool setupDisplay(){
     //returned if setup is correctly completed
     tft.begin();
+    // tft.setRotation(1);
     return true;
 }
 
@@ -212,8 +213,14 @@ void getNunchukPosition(){
         return;
     } 
     
-    uint8_t x = Nunchuk.state.joy_x_axis;
-    uint8_t y = Nunchuk.state.joy_y_axis;
+    // uint8_t x = Nunchuk.state.joy_x_axis;
+    // uint8_t y = Nunchuk.state.joy_y_axis;
+    //flipped
+    uint8_t x = Nunchuk.state.joy_y_axis;
+    uint8_t y = Nunchuk.state.joy_x_axis;
+    
+    
+
     uint8_t c = Nunchuk.state.c_button;
     uint8_t z = Nunchuk.state.z_button;
     
