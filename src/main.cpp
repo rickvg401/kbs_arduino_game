@@ -56,55 +56,31 @@ void sendNEC(uint8_t data) {
 
     // for (uint8_t i = 0; i < 8; i++)
     // {
-      
-      //  if (flag)
-      // {
-      //   Serial.print("1");
-      // }
-      // else
-      // {
-      //   Serial.print("0");
-      // }
 
-      // if (data1 & (0b00000001)) voor bytes
+      // if (data1 & (0x01)) voor bytes
       if(data1 == 1)
       {
         // Verzend een logische '1'
-        TCCR1A |= (1 << COM1A0); // Zet de pin op HIGH (mark)
-        // digitalWrite(9, HIGH);
-        PORTB |= (1 << PB1);
-        // delayMicroseconds(500);
+        TCCR0A |= (1<< COM0A0);
+        PORTD |= (1<< PD6);
+        _delay_us(1700); // houd dit bit voor 1700 us aan // BUSY WAITING WORDT VERANDERT IN SPRINT 2
 
-        _delay_us(1700);
-        // TCCR1A &= ~(1 << COM1A0); // Zet de pin op LOW (space)
-        // // digitalWrite(9,LOW);
-        // PORTB &= ~(1 << PB1);
-        // _delay_us(1700);
       }
       else
       {
         // Verzend een logische '0'
-        TCCR1A |= (1 << COM1A0); // Zet de pin op LOW (space)
-        // digitalWrite(9,LOW);
-        PORTB |= (1 << PB1);
-        // delayMicroseconds(1500); // Bijvoorbeeld: houd de bit voor 500 µs aan (kan aangepast worden)
+        TCCR0A |= (1<<COM0A0); // toggle de pin met 38KHZ
+        PORTD |= (1<< PD6); // pin naar high zetten
+        _delay_us(700); // houd dit bit voor 700 us aan // BUSY WAITING WORDT VERANDERT IN SPRINT 2
 
-        _delay_us(700);
-
-        // TCCR1A &= ~(1 << COM1A0); // Zet de pin op LOW (space)
-        // // digitalWrite(9,LOW);
-        // PORTB &= ~(1 << PB1);
-        // _delay_us(700);
-        
       }
       // data1 = data1 >> 1; // voor bytes
       // Verzend een logische '0'
-        TCCR1A &= ~(1 << COM1A0); // Zet de pin op LOW (space)
-        // digitalWrite(9,LOW);
-        PORTB &= ~(1 << PB1);
+
+        TCCR0A &= ~(1<< COM0A0);
+        PORTD &= ~(1<<PD6);
     // }
     Serial.println(" einde ");
-
   
 }
 
@@ -122,11 +98,11 @@ ISR(INT0_vect)
     // bit in het resulterende buffer.
      currentCounterValue = counter;
      pulseDuration = currentCounterValue - prevCounterValue;
-    if(pulseDuration > 160 && pulseDuration < 190) {
+    if(pulseDuration > 169 && pulseDuration < 178) {
       // Voeg '1' toe aan buffer
       flag = true;
       eenofnull = 1;
-    } else if (pulseDuration < 80) {
+    } else if (pulseDuration < 76 && pulseDuration > 70) {
       // Voeg '0' toe aan buffer
       flag = false;
       eenofnull = 0;
@@ -141,7 +117,7 @@ ISR(INT0_vect)
  }
 }
 
-ISR(TIMER1_COMPA_vect)
+ISR(TIMER0_COMPA_vect)
 {
   // counter altijd ophogen 
   // counter hier altijd ophogen 
@@ -153,18 +129,19 @@ ISR(TIMER1_COMPA_vect)
 
 void initIR()
 {
-  
-    DDRB |= (1<<DDB1); // ir led
-    
-    OCR1A = 208; // compare match for 38KHZ increments
-    TCCR1B |= (1<<WGM12); // ctc mode
-    TCCR1B |= (1<<CS10); // no prescaler
-    TIMSK1 |= (1<<OCIE1A); // enable timer compare interrupt
+    DDRD |= (1<<DDD6); // ir led op gameshield
 
-    TCCR1A &= ~(1<<COM1A0); // disable  -> toggle OC1A pin 9 on compare match
+    // TCCR1A &= ~(1<<COM1A0); // disable  -> toggle OC1A pin 9 on compare match
+
+    // timer 0 voor irled
+    OCR0A = 208;
+    TCCR0A |= (1<<WGM01);
+    TCCR0B |= (1<<CS00); // no prescaler
+    TIMSK0 |= (1<<OCIE0A); // enable timer compare interrupt
+
+    TCCR0A &= ~(1<<COM0A0);// toggle OC0A pin 6
 
     // external interrupt
-
     EIMSK |= (1<<INT0); // int0 external interrupt aan
     EICRA |= (1<<ISC00); // any logical change generate interrupt
 
@@ -192,10 +169,6 @@ int main(void)
     {
         // uint8_t data = 0b00001101;
         // sendNEC(data); // Voorbeeld: Verstuur een testsignaal met waarde 0x00FF  
-        // _delay_ms(1000);
-        // delay(10); //
-        // sendNEC(1);
-        // delay(10);
         
       // nunchuck en display
         getNunchukPosition();
@@ -213,8 +186,7 @@ int main(void)
         } else if(eenofnull == 0) {
           PCF8574_write((0b00000000));
         } 
-        // Serial.print("status van ontvanger ->>> ");
-        // Serial.println(PIND & (1<<PD2));
+
         Serial.println(pulseDuration);
         // movePlayer(NunChuckPosition[1],NunChuckPosition[0]);
         
