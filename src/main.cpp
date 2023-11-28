@@ -233,7 +233,7 @@ void getNunchukPosition(){
             NunChuckPosition[0] = 128;
         }
         if(y != 128){
-                NunChuckPosition[1] = y>128 ? 200 : 50;} 
+                NunChuckPosition[1] = y>128 ? 50 : 200;} 
         else{
                 NunChuckPosition[1] = 128;
         }
@@ -252,7 +252,6 @@ void getNunchukPosition(){
     
 }
 
-
 void PCF8574_write(byte bytebuffer)
 {
   Wire.beginTransmission(PCF8574_i2cAdr);
@@ -263,8 +262,8 @@ void PCF8574_write(byte bytebuffer)
 
 int main(void)
 {
-    initIR();
     sei();
+    initIR();
     #ifdef SerialActive
     Serial.begin(BAUDRATE);
     #endif
@@ -286,10 +285,10 @@ int main(void)
         
       // nunchuck en display
         getNunchukPosition();
-        if(!NunChuckPosition[2])
+        if(NunChuckPosition[2])
         {
           sendNEC(1);
-        } else if( !NunChuckPosition[3]) {
+        } else if(NunChuckPosition[3]) {
           sendNEC(0);
         }
         if(eenofnull == 1)
@@ -299,7 +298,7 @@ int main(void)
           PCF8574_write((0b00000000));
         } 
 
-        Serial.println(pulseDuration);
+        // Serial.println(pulseDuration);
         // movePlayer(NunChuckPosition[1],NunChuckPosition[0]);
         movePlayerNunchuk();
         
