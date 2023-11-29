@@ -202,9 +202,8 @@ void movePlayerNunchuk(){
 }
 
 void drawLevel(){
-    // for(int i=0;i<100;i+=25){
-    //     drawPath(i,200);
-    // }
+  tft.fillScreen(ILI9341_RED);
+  drawPlayer(128,128);
 }
 
 
@@ -264,19 +263,14 @@ int main(void)
 {
     sei();
     initIR();
-    #ifdef SerialActive
     Serial.begin(BAUDRATE);
-    #endif
     Wire.begin();
 
     if(!setupNunchuck()){return 0;}
     if(!setupDisplay()){return 0;}
 
 
-    tft.fillScreen(ILI9341_RED);
-    // drawLevel();
-    drawPlayer(128,128);
-    // drawPath(100,128);
+    drawLevel();
 
     while(1)
     {
