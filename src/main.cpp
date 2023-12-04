@@ -1,25 +1,79 @@
+#include <avr/interrupt.h>
+#include <Wire.h>
+#include <Arduino.h>
+#include <Nunchuk.h>
+#include "SPI.h"
+#include "display/Adafruit-GFX/Adafruit_GFX.h"
+#include "display/Adafruit_ILI9341.h"
+#include <util/delay.h>
 
+// #include "SPI.h"
+// #include "Adafruit_GFX.h"
+// #include "Adafruit_ILI9341.h"
+// #include <avr/interrupt.h>
+// #include <Nunchuk.h>
+
+//general
 #define F_CPU 16000000ul
 
-#include "SPI.h"
-#include "Adafruit_GFX.h"
-#include "Adafruit_ILI9341.h"
-#include <avr/interrupt.h>
-#include <Nunchuk.h>
+//serial
+#define SerialActive //if defined serial is active
+#define BAUDRATE 9600
 
+//nunchuk
 #define nunchuk_ID 0xA4 >> 1
+// unsigned char buffer[4];// array to store arduino output
+uint8_t NunChuckPosition[4];
+bool NunChuckPositionDivided = false;
 
+/*display*/
 #define TFT_DC 9
 #define TFT_CS 10
+Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
-
+//game
 const int GAMECLOCK = 15; //ball updates every x times per second
+uint16_t playerPosX;
+uint16_t playerPosY;
 
 const uint16_t FIELD_WIDTH = 32;
 const uint16_t FIELD_HEIGHT = 24; // could be uint8_t
 const uint8_t BLOCK_SIZE = 10;
 const uint8_t FIELD_DIVISION = 8;
-Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
+
+#define PLAYER_COLOR TFT_YELLOW
+#define GHOST_COLOR TFT_INDIANRED
+#define WALL_COLOR ILI9341_BLUE
+#define BACKGROUND  ILI9341_BLACK
+#define COIN_COLOR  TFT_GOLD
+
+// 7 segment display
+#define PCF8574_i2cAdr 0x21
+void PCF8574_write(byte bytebuffer);
+byte PCF8574_read();
+byte bits;
+
+// boolean voor het printen straks niet meer nodig
+volatile bool flag = false;
+
+// infrared vars
+volatile uint16_t prevCounterValue = 0;
+volatile uint16_t currentCounterValue;
+volatile uint16_t pulseDuration;
+volatile uint8_t eenofnull;
+volatile uint16_t counter = 0;
+
+
+
+bool setupDisplay();
+bool setupNunchuck();
+void drawPlayer(uint16_t x, uint16_t y);
+void drawPath(uint16_t x, uint16_t y);
+void movePlayer(uint16_t newX,uint16_t newY);
+void movePlayerNunchuk();
+void drawLevel();
+void getNunchukPosition();
+void PCF8574_write(byte bytebuffer);
 
 void setupTimer();
 void drawField(uint8_t [FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION]);
@@ -30,11 +84,7 @@ void drawGhosts();
 bool canWalk(uint8_t, uint8_t);
 void setSurrounding(uint8_t, uint8_t);
 
-#define PLAYER_COLOR TFT_YELLOW
-#define GHOST_COLOR TFT_INDIANRED
-#define WALL_COLOR ILI9341_BLUE
-#define BACKGROUND  ILI9341_BLACK
-#define COIN_COLOR  TFT_GOLD
+
 
 
 enum direction {NORTH, EAST, SOUTH, WEST};
@@ -151,48 +201,13 @@ uint8_t field[FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION] = {
 uint8_t playerX = 1;
 uint8_t playerY = 1;
 
-volatile direction cd = EAST;
-
-int main()
-{
-  setupTimer();
-
-  tft.begin();
-  tft.setRotation(1);
-  tft.fillScreen(BACKGROUND);
-
-  drawField(&field[0]);
-  drawCoins();
-  drawGhosts();
-  drawPlayer(PLAYER_COLOR);
-  sei();
-
-  Wire.begin();
-  if(!Nunchuk.begin(nunchuk_ID)){
-    return(1);
-  }
-  while(1)
-  {
-    if(!Nunchuk.getState(nunchuk_ID))
-    {
-      return (1);
-    } 
-    if (Nunchuk.state.joy_y_axis > 200)
-      cd = SOUTH;
-    else if (Nunchuk.state.joy_x_axis > 200)
-      cd = EAST;
-    else if (Nunchuk.state.joy_y_axis < 50)
-      cd = NORTH;
-    else if (Nunchuk.state.joy_x_axis < 50)
-      cd = WEST;
-  }
-}
+// volatile direction cd = EAST;
 
 uint8_t getTileAt (uint8_t x, uint8_t y)
 {
   return (field[y][x / 8] & (1 << (7-(x % 8))) ? 1 : 0);
 }
-
+/*
 void setupTimer()
 {
   uint16_t c = ((F_CPU / 1024) / GAMECLOCK ) - 1;
@@ -203,8 +218,8 @@ void setupTimer()
   TIMSK1 = (1 << OCIE1A);
   TCCR1B |= (1 << CS12) | (1 << CS10);
 }
-
-
+*/
+/*
 ISR(TIMER1_COMPA_vect)
 {
   switch (cd)
@@ -246,7 +261,7 @@ ISR(TIMER1_COMPA_vect)
     break;
   }
 }
-
+*/
 void drawField(uint8_t field[FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION])
 {
   for (uint16_t y = 0; y < FIELD_HEIGHT; y++)
@@ -262,10 +277,10 @@ void drawField(uint8_t field[FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION])
 }
 
 
-void drawPlayer(uint16_t color)
-{
-  tft.fillRect(playerX*BLOCK_SIZE, playerY*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE, color);
-}
+// void drawPlayer(uint16_t color)
+// {
+//   tft.fillRect(playerX*BLOCK_SIZE, playerY*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE, PLAYER_COLOR);
+// }
 
 void drawCoins(){
   for(int i=0;i<COINS_LENGTH;i++){
@@ -286,67 +301,31 @@ void setSurrounding(uint8_t x, uint8_t y)
 }
 
 bool canWalk(uint8_t x, uint8_t y)
-{
+{//x ,y grid coord
   if(getTileAt(x, y) != 0)
     return false;
   return true;
 }
 
-#include <avr/interrupt.h>
-#include <Wire.h>
-#include <Arduino.h>
-#include <Nunchuk.h>
-#include "SPI.h"
-#include "display/Adafruit-GFX/Adafruit_GFX.h"
-#include "display/Adafruit_ILI9341.h"
-#include <util/delay.h>
+uint16_t* walkTo(uint16_t x,uint16_t y){
+//xy free coord
 
+//work in progress
+  uint16_t *coords= new uint16_t[2];
+  float x1 = x/BLOCK_SIZE;
+  float y1 = y/BLOCK_SIZE;
 
-//serial
-#define SerialActive //if defined serial is active
-#define BAUDRATE 9600
+  Serial.println(x1);
+  Serial.println(y1);
+  // getTileAt()
+  // uint16_t coords[2]= new uint16_t {100,230};
+  
+  coords[0] = x;
+  coords[1] = y;
+  
 
-//nunchuk
-#define nunchuk_ID 0xA4 >> 1
-// unsigned char buffer[4];// array to store arduino output
-uint8_t NunChuckPosition[4];
-bool NunChuckPositionDivided = false;
-
-/*display*/
-#define TFT_DC 9
-#define TFT_CS 10
-Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
-
-//game
-uint16_t playerPosX;
-uint16_t playerPosY;
-
-
-// 7 segment display
-#define PCF8574_i2cAdr 0x21
-void PCF8574_write(byte bytebuffer);
-byte PCF8574_read();
-byte bits;
-
-// boolean voor het printen straks niet meer nodig
-volatile bool flag = false;
-
-// infrared vars
-volatile uint16_t prevCounterValue = 0;
-volatile uint16_t currentCounterValue;
-volatile uint16_t pulseDuration;
-volatile uint8_t eenofnull;
-volatile uint16_t counter = 0;
-
-bool setupDisplay();
-bool setupNunchuck();
-void drawPlayer(uint16_t x, uint16_t y);
-void drawPath(uint16_t x, uint16_t y);
-void movePlayer(uint16_t newX,uint16_t newY);
-void movePlayerNunchuk();
-void drawLevel();
-void getNunchukPosition();
-void PCF8574_write(byte bytebuffer);
+  return coords;
+}
 
 
 void sendNEC(uint8_t data) {
@@ -449,6 +428,7 @@ void initIR()
 bool setupDisplay(){
     //returned if setup is correctly completed
     tft.begin();
+    tft.setRotation(1);
     return true;
 }
 
@@ -470,13 +450,15 @@ bool setupNunchuck(){
 
 
 void drawPlayer(uint16_t x, uint16_t y){
-    tft.fillRect(x,y,25,25,ILI9341_DARKCYAN);
+
+    // tft.fillRect(playerX*BLOCK_SIZE, playerY*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE, PLAYER_COLOR);
+    tft.fillRect(x,y,BLOCK_SIZE,BLOCK_SIZE,PLAYER_COLOR);
     playerPosX = x;
     playerPosY = y;
 }
 
 void drawPath(uint16_t x, uint16_t y){
-    tft.fillRect(x,y,25,25,ILI9341_BLACK);
+    tft.fillRect(x,y,BLOCK_SIZE,BLOCK_SIZE,BACKGROUND);
 }
 
 void movePlayer(uint16_t newX,uint16_t newY){
@@ -486,18 +468,26 @@ void movePlayer(uint16_t newX,uint16_t newY){
 
 
 void movePlayerNunchuk(){
-    drawPath(playerPosX,playerPosY);
+    
     
     
     uint16_t newX = playerPosX + ((NunChuckPosition[0]-128)/100*1);
     uint16_t newY = playerPosY + ((NunChuckPosition[1]-128)/100*1);
 
-    drawPlayer(newX,newY);
+    uint16_t* coordPtr = walkTo(newX,newY);
+
+    drawPath(playerPosX,playerPosY);
+    drawPlayer(coordPtr[0],coordPtr[1]);
+
+    delete coordPtr;
 }
 
 void drawLevel(){
-  tft.fillScreen(ILI9341_RED);
-  drawPlayer(128,128);
+  tft.fillScreen(BACKGROUND);
+  drawField(&field[0]);
+  drawCoins();
+  drawGhosts();
+  drawPlayer(20,20);
 }
 
 
@@ -509,8 +499,8 @@ void getNunchukPosition(){
     // uint8_t x = Nunchuk.state.joy_x_axis;
     // uint8_t y = Nunchuk.state.joy_y_axis;
     //flipped
-    uint8_t x = Nunchuk.state.joy_y_axis;
-    uint8_t y = Nunchuk.state.joy_x_axis;
+    uint8_t x = Nunchuk.state.joy_x_axis;
+    uint8_t y = -Nunchuk.state.joy_y_axis;
     
     
 
@@ -573,18 +563,18 @@ int main(void)
         
       // nunchuck en display
         getNunchukPosition();
-        if(NunChuckPosition[2])
-        {
-          sendNEC(1);
-        } else if(NunChuckPosition[3]) {
-          sendNEC(0);
-        }
-        if(eenofnull == 1)
-        {
-          PCF8574_write(0b11111111);
-        } else if(eenofnull == 0) {
-          PCF8574_write((0b00000000));
-        } 
+        // if(NunChuckPosition[2])
+        // {
+        //   sendNEC(1);
+        // } else if(NunChuckPosition[3]) {
+        //   sendNEC(0);
+        // }
+        // if(eenofnull == 1)
+        // {
+        //   PCF8574_write(0b11111111);
+        // } else if(eenofnull == 0) {
+        //   PCF8574_write((0b00000000));
+        // } 
 
         // Serial.println(pulseDuration);
         // movePlayer(NunChuckPosition[1],NunChuckPosition[0]);

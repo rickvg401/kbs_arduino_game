@@ -50,7 +50,7 @@ def exportGrid():
 	with open(ofname, 'w') as f:
 		f.write("const uint8_t COINS_LENGTH  = "+str(len(coins))+";\n")
 		f.write("const uint8_t GHOSTS_LENGTH = "+str(len(ghosts))+";\n")
-		f.write("const uint8_t PLAYER_LENGTH = "+str(len(playersee))+";\n")
+		f.write("const uint8_t PLAYER_LENGTH = "+str(len(playerCheck))+";\n")
 
 		f.write("uint8_t coins["+str(len(coins))+"][2] = {\n")
 		for coin in coins:
