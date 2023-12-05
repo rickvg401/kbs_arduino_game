@@ -307,21 +307,67 @@ bool canWalk(uint8_t x, uint8_t y)
   return true;
 }
 
-uint16_t* walkTo(uint16_t x,uint16_t y){
+uint16_t* walkTo(uint16_t xFrom, uint16_t yFrom,uint16_t xTo,uint16_t yTo){
 //xy free coord
 
 //work in progress
   uint16_t *coords= new uint16_t[2];
-  float x1 = x/BLOCK_SIZE;
-  float y1 = y/BLOCK_SIZE;
+  float xg = (float)xTo/(float)BLOCK_SIZE;
+  float yg = (float)yTo/(float)BLOCK_SIZE;
 
-  Serial.println(x1);
-  Serial.println(y1);
+  int xg_m = floor(xg);//main x
+  int yg_m = floor(yg);//main y
+
+  int xg_d = xg_m;//main down
+  int yg_d = yg_m+1;//main down
+
+  int xg_r = xg_m+1;//main right
+  int yg_r = yg_m;//main right
+
+
+  int xg_rd = xg_r;//main right down
+  int yg_rd = yg_d;//main right down
+
+  tft.width();
+  // Serial.print(xTo);
+  // Serial.print(":");
+  // Serial.print(yTo);
+
+  // Serial.print("=xg_m/");
+  // Serial.print(xg_m);
+  // Serial.print(":");
+  // Serial.print(yg_m);
+
+  // Serial.print("=xg_d/");
+  // Serial.print(xg_d);
+  // Serial.print(":");
+  // Serial.print(yg_d);
+
+  // Serial.print("=xg_r/");
+  // Serial.print(xg_r);
+  // Serial.print(":");
+  // Serial.print(yg_r);
+
+  // Serial.print("=xg_rd/");
+  // Serial.print(xg_rd);
+  // Serial.print(":");
+  // Serial.print(yg_rd);
+
+
+  bool xgmb = getTileAt(xg_m,yg_m);
+  Serial.print(xgmb);
+
+  getTileAt(xg_d,yg_d);
+  getTileAt(xg_r,yg_r);
+  getTileAt(xg_rd,yg_rd);
+  Serial.println(" ");
   // getTileAt()
   // uint16_t coords[2]= new uint16_t {100,230};
   
-  coords[0] = x;
-  coords[1] = y;
+  xTo = xg_m*BLOCK_SIZE;//snap x
+  yTo = yg_m*BLOCK_SIZE;//snap y
+  coords[0] = xTo;
+  coords[1] = yTo;
   
 
   return coords;
@@ -428,7 +474,7 @@ void initIR()
 bool setupDisplay(){
     //returned if setup is correctly completed
     tft.begin();
-    tft.setRotation(1);
+    tft.setRotation(1);//origin top left 
     return true;
 }
 
@@ -474,7 +520,7 @@ void movePlayerNunchuk(){
     uint16_t newX = playerPosX + ((NunChuckPosition[0]-128)/100*1);
     uint16_t newY = playerPosY + ((NunChuckPosition[1]-128)/100*1);
 
-    uint16_t* coordPtr = walkTo(newX,newY);
+    uint16_t* coordPtr = walkTo(playerPosX,playerPosY,newX,newY);
 
     drawPath(playerPosX,playerPosY);
     drawPlayer(coordPtr[0],coordPtr[1]);
@@ -487,7 +533,7 @@ void drawLevel(){
   drawField(&field[0]);
   drawCoins();
   drawGhosts();
-  drawPlayer(20,20);
+  drawPlayer(players[0][0]*BLOCK_SIZE,players[0][1]*BLOCK_SIZE);
 }
 
 
