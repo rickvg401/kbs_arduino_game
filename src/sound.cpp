@@ -3,13 +3,15 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
+#include <Arduino.h> // DELETE IN MAIN
+
 // Timer 2 and pin OC2B (pin 3 on arduino) is used for sound
 
-volatile uint16_t duration = 0;
+volatile uint32_t duration = 0;
 uint32_t maxDuration = 0;
 music* cMusic;
 volatile uint8_t musicCt = 0;
-uint8_t loop = false;
+uint8_t _loop = 0; // loop is already declared in Arduino.h. Using _loop instead of loop.
 
 void setupBuzzer()
 {  
@@ -24,26 +26,33 @@ void setupBuzzer()
 
 ISR(TIMER2_OVF_vect)
 {
-  if (duration++ > maxDuration)
+  duration++;
+  if (duration > maxDuration) // If the maxDuration is reached. Continue with next tone
   {
     musicCt++;
-    if (musicCt > cMusic->length)
+    duration = 0;
+    if (musicCt > cMusic->length-1)
     {
-      if (loop)
+      if (_loop)
       {
         musicCt = 0;
       } else 
       {
         stopMusic();
+        Serial.println(musicCt);
+        Serial.println("stop");
         return;
       }
     }
+    TCNT1H = 0; // reset counter registers
+    TCNT1L = 0;
+    TCNT2 = 0;
     setTone(cMusic->frequencies[musicCt]);
     setDuration(cMusic->durations[musicCt]);
   }
 }
 
-void stopMusic() // Disable prescaler to stop the counters
+void stopMusic() // Unset prescaler to stop the counters
 {
   TCCR1B = (TCCR1B & 0xF8);
   TCCR2B = (TCCR2B & 0xF8);
@@ -54,16 +63,17 @@ ISR(TIMER1_COMPA_vect) // Flip OC2B pin mode, for frequency
   TCCR2A ^= (1 << COM2B1);
 }
 
-void setVolume(uint8_t newVolume) // Set dutyCycle in timer2 for volume
+void setVolume(uint8_t newVolume) // Set dutyCycle in timer2 for volume dutycycle is
 {
   OCR2B = newVolume;
 }
 
-void setTone(uint16_t frequency) // frequency in hertz, duration in ms.
+void setTone(uint16_t frequency) // frequency in hertz
 {
-  uint16_t ocr = 31250 / frequency - 1;
+  uint16_t ocr = (31250 / frequency) - 1;
   OCR1AH = (ocr >> 8);
   OCR1AL = ocr;
+  Serial.println(ocr);
 }
 
 void loadMusic(music* musicStruct)
@@ -73,29 +83,29 @@ void loadMusic(music* musicStruct)
 
 void playMusic()
 {
-  TCNT1H = 0;
+  TCNT1H = 0; // reset counter registers
   TCNT1L = 0;
   TCNT2 = 0;
-
   musicCt = 0;
-  setTone(cMusic->frequencies[musicCt]);
-  setDuration(cMusic->durations[musicCt]);
+
+  setTone(cMusic->frequencies[musicCt]); // Set correct ocr value in timer1
+  setDuration(cMusic->durations[musicCt]); // set correct 
 
   TCCR2B = (1 << CS20); // 1x prescalor for volume // start prescaler to start the timer
   TCCR1B |= (1 << CS12); // 256x prescaler for tone // start prescaler to start the timer
 }
 
-void enableLoop()
+void enableLoop() // set loop variable
 {
-  loop = true;
+  _loop = 1;
 }
 
-void disableLoop()
+void disableLoop() // unset loop variable
 {
-  loop = false;
+  _loop = 0;
 }
 
-void setDuration(uint16_t newDuration)
+void setDuration(uint16_t newDuration) // set the amount of 
 {
   maxDuration = 62500 * ((float) newDuration / 1000);
   duration = 0;
