@@ -300,11 +300,35 @@ void setSurrounding(uint8_t x, uint8_t y)
   surrounding[3] = getTileAt(x-1, y); //west
 }
 
-bool canWalk(uint8_t x, uint8_t y)
+bool isNotWall(uint8_t x, uint8_t y)
 {//x ,y grid coord
   if(getTileAt(x, y) != 0)
     return false;
   return true;
+}
+
+float revRound(float x){
+  int c = ceil(x);
+  int f = floor(x);
+
+  float dec = x-((int)(x));//only decimals //define sepperate 
+  float newX = x;
+
+  if(dec>0.5){
+     newX = floor(x);
+  }else{
+    newX = ceil(x);
+  }
+  
+  // Serial.print("RR:");
+  // Serial.print(dec);
+  // Serial.print(":");
+  // Serial.print(x);
+  // Serial.print("*");
+  // Serial.print(newX);
+  
+
+  return newX;
 }
 
 uint16_t* walkTo(uint16_t xFrom, uint16_t yFrom,uint16_t xTo,uint16_t yTo){
@@ -315,8 +339,10 @@ uint16_t* walkTo(uint16_t xFrom, uint16_t yFrom,uint16_t xTo,uint16_t yTo){
   float xg = (float)xTo/(float)BLOCK_SIZE;
   float yg = (float)yTo/(float)BLOCK_SIZE;
 
-  int xg_m = floor(xg);//main x
-  int yg_m = floor(yg);//main y
+
+  
+  int xg_m = revRound(xg);//main x
+  int yg_m = revRound(yg);//main y
 
   int xg_d = xg_m;//main down
   int yg_d = yg_m+1;//main down
@@ -328,15 +354,21 @@ uint16_t* walkTo(uint16_t xFrom, uint16_t yFrom,uint16_t xTo,uint16_t yTo){
   int xg_rd = xg_r;//main right down
   int yg_rd = yg_d;//main right down
 
-  tft.width();
-  // Serial.print(xTo);
-  // Serial.print(":");
-  // Serial.print(yTo);
+  // tft.width();
+  Serial.print(xTo);
+  Serial.print(":");
+  Serial.print(yTo);
 
-  // Serial.print("=xg_m/");
-  // Serial.print(xg_m);
-  // Serial.print(":");
-  // Serial.print(yg_m);
+  Serial.print(" ");
+  Serial.print(xg);
+  Serial.print(":");
+  Serial.print(yg);
+  
+
+  Serial.print("=xg_m/");
+  Serial.print(xg_m);
+  Serial.print(":");
+  Serial.print(yg_m);
 
   // Serial.print("=xg_d/");
   // Serial.print(xg_d);
@@ -355,21 +387,39 @@ uint16_t* walkTo(uint16_t xFrom, uint16_t yFrom,uint16_t xTo,uint16_t yTo){
 
 
   bool xgmb = getTileAt(xg_m,yg_m);
-  Serial.print(xgmb);
+  // Serial.print(xgmb);
 
   getTileAt(xg_d,yg_d);
   getTileAt(xg_r,yg_r);
   getTileAt(xg_rd,yg_rd);
-  Serial.println(" ");
+  
   // getTileAt()
   // uint16_t coords[2]= new uint16_t {100,230};
   
-  xTo = xg_m*BLOCK_SIZE;//snap x
-  yTo = yg_m*BLOCK_SIZE;//snap y
-  coords[0] = xTo;
-  coords[1] = yTo;
+  Serial.print("=snap/");
+  Serial.print(xg_m*BLOCK_SIZE);
+  Serial.print(":");
+  Serial.print(yg_m*BLOCK_SIZE);
+
+  // xTo = xg_m*BLOCK_SIZE;//snap x
+  // yTo = yg_m*BLOCK_SIZE;//snap y
+  // if()
+  coords[0] = xFrom;
+  coords[1] = yFrom;
+
+
+
+  if(!xgmb){
+    coords[0] = xg_m*BLOCK_SIZE;
+    coords[1] = yg_m*BLOCK_SIZE;
+  }
+
   
 
+  // coords[0] = xTo;
+  // coords[1] = yTo;
+  
+  Serial.println(" ");
   return coords;
 }
 
@@ -493,12 +543,24 @@ bool setupNunchuck(){
     return true;
 }
 
+void drawPacmen(uint16_t x,uint16_t y){
+  uint8_t r = (BLOCK_SIZE/2)-1;
+  uint8_t maxBite = BLOCK_SIZE*0.4;//height of pacmen bite
+  uint8_t bite = maxBite;
+  // tft.fillRect(x,y,BLOCK_SIZE,BLOCK_SIZE,PLAYER_COLOR);
+  tft.fillCircle(x+(BLOCK_SIZE/2),y+(BLOCK_SIZE/2),r,PLAYER_COLOR);
+  tft.fillTriangle(x+(BLOCK_SIZE/2),y+(BLOCK_SIZE/2),(x+BLOCK_SIZE)-1,(y+(BLOCK_SIZE/2))+(bite/2),(x+BLOCK_SIZE)-1,(y+(BLOCK_SIZE/2))-(bite/2),BACKGROUND);
+
+}
 
 
 void drawPlayer(uint16_t x, uint16_t y){
 
     // tft.fillRect(playerX*BLOCK_SIZE, playerY*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE, PLAYER_COLOR);
-    tft.fillRect(x,y,BLOCK_SIZE,BLOCK_SIZE,PLAYER_COLOR);
+    // tft.fillRect(x,y,BLOCK_SIZE,BLOCK_SIZE,PLAYER_COLOR);
+    drawPacmen(x,y);
+
+
     playerPosX = x;
     playerPosY = y;
 }
@@ -511,7 +573,38 @@ void movePlayer(uint16_t newX,uint16_t newY){
     drawPath(playerPosX,playerPosY);
     drawPlayer(newX,newY);
 }
+// uint16_t xyToVector(uint16_t x0,uint16_t y0,uint16_t x1,uint16_t y1){
+//   uint16_t vectorDir;
+  
+//   uint16_t vx = x0 - x1;
+//   uint16_t vy = y0 - y1;
 
+//   bool xp = false ;//x positive 
+//   bool yp =false; //y positive 
+
+
+
+//   // tan-1(y/x)
+//   float dir =  atan((vy/vx))*RAD_TO_DEG;
+//   if(!xp){
+//     dir = dir+90
+
+//   }
+  
+  
+//   Serial.print("atan:");
+//   Serial.print(dir);
+  
+
+
+//   return vectorDir;
+// }
+
+// uint16_t* vectorToXY(uint16_t beginX,uint16_t beginY,uint16_t vector){
+  
+
+//   return XY;
+// }
 
 void movePlayerNunchuk(){
     
@@ -519,8 +612,13 @@ void movePlayerNunchuk(){
     
     uint16_t newX = playerPosX + ((NunChuckPosition[0]-128)/100*1);
     uint16_t newY = playerPosY + ((NunChuckPosition[1]-128)/100*1);
+    
+    // if(playerPosX == newX || playerPosY == newY){
+      
+    // }else{}
 
     uint16_t* coordPtr = walkTo(playerPosX,playerPosY,newX,newY);
+    // uint16_t vector = xyToVector(playerPosX,playerPosY,newX,newY);
 
     drawPath(playerPosX,playerPosY);
     drawPlayer(coordPtr[0],coordPtr[1]);
@@ -625,6 +723,7 @@ int main(void)
         // Serial.println(pulseDuration);
         // movePlayer(NunChuckPosition[1],NunChuckPosition[0]);
         movePlayerNunchuk();
+        delay(50);
         
     } 
     return 0;
