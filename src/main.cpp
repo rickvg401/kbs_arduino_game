@@ -57,6 +57,8 @@ volatile uint16_t currentcounterzero = 0;
 volatile uint16_t currentcounterend = 0;
 volatile uint16_t currentcounterbegin = 0;
 
+// buffer
+uint8_t bufferResult = 0;
 
 bool setupDisplay();
 bool setupNunchuck();
@@ -68,7 +70,8 @@ void drawLevel();
 void getNunchukPosition();
 void PCF8574_write(byte bytebuffer);
 void addToBuffer();
-uint8_t clearbuffer();
+// uint8_t clearbuffer();
+uint8_t nunchuckWrap();
 
 void sendNEC(uint8_t data) {
  
@@ -114,42 +117,39 @@ void sendBegin()
     }
 }
 
-const uint8_t bufferSize = 8; // Grootte van de buffer in bytes
-uint8_t buffer[bufferSize]; // Array om de bits op te slaan
-uint8_t bufferIndex = 0; // Huidige index in de buffer
 
+
+uint8_t bufferIndex = 0; // Huidige index in de buffer
+uint8_t buffer = 0;
 void addToBuffer() {
-  if (bufferIndex < 8) { // Controleer of de buffer niet vol is
-   
     
     // Voeg het bit toe aan het juiste byte in de buffer
     if (eenofnull == 1) {
-      buffer[bufferIndex] = 1; // Zet het bit op 1
+
+      buffer |= (1 << bufferIndex); // Zet het bit op 1
       Serial.println("adding 1 to buffer");
+
+      bufferIndex++; // Verhoog de bufferindex voor het volgende bit
     } else if(eenofnull == 0){
-      buffer[bufferIndex] = 0; // Zet het bit op 0
+
+      buffer &= ~(1 << bufferIndex); // Zet het bit op 0
       Serial.println("adding 0 to buffer");
 
+      bufferIndex++; // Verhoog de bufferindex voor het volgende bit
     }
     
-    bufferIndex++; // Verhoog de bufferindex voor het volgende bit
-  } else {
-    
-    // Serial.println("buffer full");
-    clearbuffer();
-  }
 }
 
-uint8_t clearbuffer()
-{
-  uint8_t data = 0;
-  for (uint8_t i = 0; i < 8; i++)
-  {
-    data |= buffer[i] << i;
-  }
-  uint8_t buffer[bufferSize]; 
-  return data;
-}
+// uint8_t clearbuffer()
+// {
+//   uint8_t data = 0;
+//   for (uint8_t i = 0; i < 8; i++)
+//   {
+//     data |= buffer[i] << i;
+//   }
+
+//   return data;
+// }
 
 ISR(INT0_vect)
 {
@@ -166,20 +166,34 @@ ISR(INT0_vect)
      pulseDuration = currentCounterValue - prevCounterValue;
     if(pulseDuration > 160 && pulseDuration < 190) {
       // Voeg '1' toe aan buffer
-      eenofnull = 1;  
-      
+      eenofnull = 1; 
+      if(bufferIndex == 4)
+      {
+        buffer = 0;
+        bufferIndex = 0;
+      }
+      buffer |= (1 << bufferIndex); // Zet het bit op 1 
+      bufferIndex++;
+
     } else if (pulseDuration < 85 && pulseDuration > 70) {
       // Voeg '0' toe aan buffer
       eenofnull = 0;
+      if(bufferIndex == 4)
+      {
+        buffer = 0;
+        bufferIndex = 0;
+      }
+      buffer &= ~(1 << bufferIndex); // Zet het bit op 0
+      bufferIndex++;
 
-    } else if (pulseDuration < 300 && pulseDuration > 340)
+    } else if (pulseDuration < 290 && pulseDuration > 320)
     {
       end = true;
       
     } else if (pulseDuration < 552 && pulseDuration > 565)
     {
       end = false;
-
+      
     }
 
  } else {
@@ -226,8 +240,6 @@ ISR(TIMER0_COMPA_vect)
 
       TCCR0A &= ~(1 << COM0A0);
       // PORTD &= ~(1 << PD6);
-     
-      
     }
   }
   //begin 555
@@ -248,7 +260,7 @@ ISR(TIMER0_COMPA_vect)
   if(logicalend == true)
   {
     currentcounterend = counter;
-    if(currentcounterend > 325)
+    if(currentcounterend > 5000) // 325
     {
       logicalend = false;
     }
@@ -389,7 +401,38 @@ void PCF8574_write(byte bytebuffer)
   Wire.endTransmission();
 }
 
+uint8_t nunchuckWrap(){
+  uint8_t nunchuckData = 0b0000;
+  if(NunChuckPosition[0] > 128){
+      nunchuckData = (1<<3) | nunchuckData;
+  } else if( NunChuckPosition[0] < 128 ){
+      nunchuckData = (1<<2) | nunchuckData;
+  } 
+  if(NunChuckPosition[1] > 128){
+      nunchuckData = (1<<1) | nunchuckData;
+  } else if( NunChuckPosition[1] < 128 ){
+      nunchuckData = (1<<0) | nunchuckData;
+  } 
+  return nunchuckData;
+  }
 
+void sendNunchuckoverIR(uint8_t data)
+{
+   uint8_t bittosend = data;
+   sendBegin();
+
+   for (uint8_t i = 0; i < 4; i++)
+   {
+     uint8_t lsb = bittosend & 0x01;
+     sendNEC(lsb);
+     bittosend = bittosend >> 1;
+    
+   }   
+   Serial.println(buffer);
+   sendEnd();
+
+
+}
 int main(void)
 {
     sei();
@@ -415,50 +458,9 @@ int main(void)
         // sendnec in een for loop 8 keer aanroepen !!!!
       // nunchuck en display
         getNunchukPosition();
-        // addToBuffer();
-        // sendNEC(2);
-        // if(!end)
-        // {
-        //   bufferIndex = 0;
-        //   for (uint8_t i = 0; i < 8; i++)
-        //   {
-        //     buffer[i] = 0;
-        //   }
-        // }
-        
-        if(NunChuckPosition[2])
-        {
-          // sendNEC(0);
-          // sendBegin();
-
-          uint8_t bittosend = 0b00001111;
-          sendBegin();
-          for (uint8_t i = 0; i < 8 ; i++)
-          {
-            uint8_t lsb = bittosend & 0x01;
-            sendNEC(lsb);
-            bittosend = bittosend >> 1;
-
-            if (end == false)
-            {
-              Serial.println(pulseDuration);
-            }
-          } 
-          sendEnd();
-          // Serial.println("einde");
-
-          // for (int i = 0; i < 8; i++)
-          // {
-          //   Serial.print(buffer[i]);
-          // }
-          // Serial.println("\n");
-
-        } 
-        else if(NunChuckPosition[3]) {
-          // sendNEC(0);
-          // sendEnd();
-          sendBegin();
-        }
+        sendNunchuckoverIR(nunchuckWrap());
+        // Serial.println(bufferResult);
+   
        
 
         if(eenofnull == 1)
