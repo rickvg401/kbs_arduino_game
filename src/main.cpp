@@ -45,16 +45,17 @@ volatile uint16_t counter = 0;
 // ir 
 volatile bool logicalone = false;
 volatile bool logicalzero = false;
-volatile uint16_t counterone = 0;
+volatile bool logicalend = false;
+volatile bool logicalbegin = false;
 
-volatile bool end = false;
+volatile bool end = true;
 
-volatile uint16_t prevcounteronevalue = 0;
-volatile uint16_t prevcounterzerovalue = 0;
-volatile bool resetone = false;
-volatile bool resetzero = false;
+
 volatile uint16_t currentcounterone = 0;
 volatile uint16_t currentcounterzero = 0;
+
+volatile uint16_t currentcounterend = 0;
+volatile uint16_t currentcounterbegin = 0;
 
 
 bool setupDisplay();
@@ -87,29 +88,30 @@ void sendNEC(uint8_t data) {
         logicalzero = true;
         TCCR0A |= (1<<COM0A0); // toggle de pin met 38KHZ
       }
-      while(logicalone || logicalzero)
-      {
-            
+      while(logicalone || logicalzero || logicalend || logicalbegin)
+      {     
       }
 
 }
 
 void sendEnd()
 {
+    counter = 0;
+    logicalend = true;
     TCCR0A |= (1<<COM0A0); // toggle de pin met 38KHZ
-    PORTD |= (1<< PD6); // pin naar high zetten
-    _delay_us(3000); 
-    TCCR0A &= ~(1<< COM0A0);
-    PORTD &= ~(1<<PD6);
+    while(logicalone || logicalzero || logicalend || logicalbegin)
+    {      
+    }
 }
 
 void sendBegin()
 {
+    counter = 0;
+    logicalbegin = true;
     TCCR0A |= (1<<COM0A0); // toggle de pin met 38KHZ
-    PORTD |= (1<< PD6); // pin naar high zetten
-    _delay_us(5500); 
-    TCCR0A &= ~(1<< COM0A0);
-    PORTD &= ~(1<<PD6);
+    while(logicalone || logicalzero || logicalend || logicalbegin)
+    {      
+    }
 }
 
 const uint8_t bufferSize = 8; // Grootte van de buffer in bytes
@@ -170,11 +172,11 @@ ISR(INT0_vect)
       // Voeg '0' toe aan buffer
       eenofnull = 0;
 
-    } else if (pulseDuration < 280 && pulseDuration > 350)
+    } else if (pulseDuration < 300 && pulseDuration > 340)
     {
       end = true;
       
-    } else if (pulseDuration < 545 && pulseDuration > 560)
+    } else if (pulseDuration < 552 && pulseDuration > 565)
     {
       end = false;
 
@@ -202,7 +204,7 @@ ISR(TIMER0_COMPA_vect)
     }
     if ((currentcounterone ) >= (175)) // 175 // - prevcounteronevalue
     {
-      prevcounteronevalue = currentcounterone;
+      // prevcounteronevalue = currentcounterone;
       
       TCCR0A &= ~(1 << COM0A0);
       // PORTD &= ~(1 << PD6);
@@ -220,7 +222,7 @@ ISR(TIMER0_COMPA_vect)
     }
     if ((currentcounterzero ) >= (75)) // 75 // - prevcounterzerovalue
     {
-      prevcounterzerovalue = currentcounterzero;
+      // prevcounterzerovalue = currentcounterzero;
 
       TCCR0A &= ~(1 << COM0A0);
       // PORTD &= ~(1 << PD6);
@@ -228,7 +230,33 @@ ISR(TIMER0_COMPA_vect)
       
     }
   }
+  //begin 555
+  if(logicalbegin == true)
+  {
+    currentcounterbegin = counter;
+    if(currentcounterbegin > 575)
+    {
+      logicalbegin = false;
+    }
+    if((currentcounterbegin) >= (555))
+    {
+      TCCR0A &= ~(1 << COM0A0);
+    }
+  }
 
+  //end 310
+  if(logicalend == true)
+  {
+    currentcounterend = counter;
+    if(currentcounterend > 325)
+    {
+      logicalend = false;
+    }
+    if((currentcounterend) >= (310))
+    {
+      TCCR0A &= ~(1 << COM0A0);
+    }
+  }
 }
 
 void initIR()
@@ -403,16 +431,22 @@ int main(void)
           // sendNEC(0);
           // sendBegin();
 
-          uint8_t bittosend = 0b00101110;
+          uint8_t bittosend = 0b00001111;
+          sendBegin();
           for (uint8_t i = 0; i < 8 ; i++)
           {
             uint8_t lsb = bittosend & 0x01;
             sendNEC(lsb);
             bittosend = bittosend >> 1;
-            Serial.println(pulseDuration);
-          }
-          Serial.println("einde");
-         
+
+            if (end == false)
+            {
+              Serial.println(pulseDuration);
+            }
+          } 
+          sendEnd();
+          // Serial.println("einde");
+
           // for (int i = 0; i < 8; i++)
           // {
           //   Serial.print(buffer[i]);
@@ -421,9 +455,9 @@ int main(void)
 
         } 
         else if(NunChuckPosition[3]) {
-          sendNEC(0);
-          Serial.println(pulseDuration);
-
+          // sendNEC(0);
+          // sendEnd();
+          sendBegin();
         }
        
 
