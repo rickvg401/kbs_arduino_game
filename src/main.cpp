@@ -34,15 +34,28 @@ void PCF8574_write(byte bytebuffer);
 byte PCF8574_read();
 byte bits;
 
-// boolean voor het printen straks niet meer nodig
-volatile bool flag = false;
 
 // infrared vars
 volatile uint16_t prevCounterValue = 0;
-volatile uint16_t currentCounterValue;
-volatile uint16_t pulseDuration;
-volatile uint8_t eenofnull;
+volatile uint16_t currentCounterValue = 0;
+volatile uint16_t pulseDuration = 0;
+volatile uint8_t eenofnull = 2;
 volatile uint16_t counter = 0;
+
+// ir 
+volatile bool logicalone = false;
+volatile bool logicalzero = false;
+volatile uint16_t counterone = 0;
+
+volatile bool end = false;
+
+volatile uint16_t prevcounteronevalue = 0;
+volatile uint16_t prevcounterzerovalue = 0;
+volatile bool resetone = false;
+volatile bool resetzero = false;
+volatile uint16_t currentcounterone = 0;
+volatile uint16_t currentcounterzero = 0;
+
 
 bool setupDisplay();
 bool setupNunchuck();
@@ -53,39 +66,87 @@ void movePlayerNunchuk();
 void drawLevel();
 void getNunchukPosition();
 void PCF8574_write(byte bytebuffer);
-
+void addToBuffer();
+uint8_t clearbuffer();
 
 void sendNEC(uint8_t data) {
-  uint8_t data1 = data;
-
-    // for (uint8_t i = 0; i < 8; i++)
-    // {
-
-      // if (data1 & (0x01)) voor bytes
-      if(data1 == 1)
+ 
+      if(data == 1 ) // && !logicalzero && !logicalone
       {
         // Verzend een logische '1'
-        TCCR0A |= (1<< COM0A0);
-        PORTD |= (1<< PD6);
-        _delay_us(1700); // houd dit bit voor 1700 us aan // BUSY WAITING WORDT VERANDERT IN SPRINT 2
-
+        // begin counter van 0 en tot die tijd zet infrared aan 
+        counter = 0;
+        logicalone = true;
+        TCCR0A |= (1<< COM0A0); // toggle pin met 38Khz
       }
-      else
+      else if (data == 0 ) 
       {
         // Verzend een logische '0'
+        // begin counter van 0 en tot die tijd zet infrared aan
+        counter = 0;
+        logicalzero = true;
         TCCR0A |= (1<<COM0A0); // toggle de pin met 38KHZ
-        PORTD |= (1<< PD6); // pin naar high zetten
-        _delay_us(700); // houd dit bit voor 700 us aan // BUSY WAITING WORDT VERANDERT IN SPRINT 2
-
       }
-      // data1 = data1 >> 1; // voor bytes
-      // Verzend een logische '0'
+      while(logicalone || logicalzero)
+      {
+            
+      }
 
-        TCCR0A &= ~(1<< COM0A0);
-        PORTD &= ~(1<<PD6);
-    // }
-    Serial.println(" einde ");
-  
+}
+
+void sendEnd()
+{
+    TCCR0A |= (1<<COM0A0); // toggle de pin met 38KHZ
+    PORTD |= (1<< PD6); // pin naar high zetten
+    _delay_us(3000); 
+    TCCR0A &= ~(1<< COM0A0);
+    PORTD &= ~(1<<PD6);
+}
+
+void sendBegin()
+{
+    TCCR0A |= (1<<COM0A0); // toggle de pin met 38KHZ
+    PORTD |= (1<< PD6); // pin naar high zetten
+    _delay_us(5500); 
+    TCCR0A &= ~(1<< COM0A0);
+    PORTD &= ~(1<<PD6);
+}
+
+const uint8_t bufferSize = 8; // Grootte van de buffer in bytes
+uint8_t buffer[bufferSize]; // Array om de bits op te slaan
+uint8_t bufferIndex = 0; // Huidige index in de buffer
+
+void addToBuffer() {
+  if (bufferIndex < 8) { // Controleer of de buffer niet vol is
+   
+    
+    // Voeg het bit toe aan het juiste byte in de buffer
+    if (eenofnull == 1) {
+      buffer[bufferIndex] = 1; // Zet het bit op 1
+      Serial.println("adding 1 to buffer");
+    } else if(eenofnull == 0){
+      buffer[bufferIndex] = 0; // Zet het bit op 0
+      Serial.println("adding 0 to buffer");
+
+    }
+    
+    bufferIndex++; // Verhoog de bufferindex voor het volgende bit
+  } else {
+    
+    // Serial.println("buffer full");
+    clearbuffer();
+  }
+}
+
+uint8_t clearbuffer()
+{
+  uint8_t data = 0;
+  for (uint8_t i = 0; i < 8; i++)
+  {
+    data |= buffer[i] << i;
+  }
+  uint8_t buffer[bufferSize]; 
+  return data;
 }
 
 ISR(INT0_vect)
@@ -95,40 +156,79 @@ ISR(INT0_vect)
  if(pinstatus)
  {
 
-    
     // opgaande flank bepaal je het verschil tussen huidige counterstand en de onthouden counterstand
     // Je hebt dan gemeten hoe lang de puls duurde. Daarmee kan je
     // bepalen of het uitgezonden bit een 0 of een 1 was. Schuif dit
     // bit in het resulterende buffer.
      currentCounterValue = counter;
      pulseDuration = currentCounterValue - prevCounterValue;
-    if(pulseDuration > 169 && pulseDuration < 178) {
+    if(pulseDuration > 160 && pulseDuration < 190) {
       // Voeg '1' toe aan buffer
-      flag = true;
-      eenofnull = 1;
-    } else if (pulseDuration < 76 && pulseDuration > 70) {
+      eenofnull = 1;  
+      
+    } else if (pulseDuration < 85 && pulseDuration > 70) {
       // Voeg '0' toe aan buffer
-      flag = false;
       eenofnull = 0;
+
+    } else if (pulseDuration < 280 && pulseDuration > 350)
+    {
+      end = true;
+      
+    } else if (pulseDuration < 545 && pulseDuration > 560)
+    {
+      end = false;
+
     }
 
  } else {
     
-    
     // bij een neergaande flank onthouden counter van timer 1
     prevCounterValue = counter;
-    eenofnull = -1;
+    eenofnull = 2;
  }
 }
 
 ISR(TIMER0_COMPA_vect)
 {
-  // counter altijd ophogen 
   // counter hier altijd ophogen 
   counter++;
-  if(counter > 100000){
-    counter = 0;
+
+  if (logicalone == true)
+  {
+    currentcounterone = counter;
+    if(currentcounterone > 200)
+    {
+      logicalone = false;
+    }
+    if ((currentcounterone ) >= (175)) // 175 // - prevcounteronevalue
+    {
+      prevcounteronevalue = currentcounterone;
+      
+      TCCR0A &= ~(1 << COM0A0);
+      // PORTD &= ~(1 << PD6);
+      
+
+    }
   }
+
+  if (logicalzero == true)
+  {
+    currentcounterzero = counter;
+    if(currentcounterzero > 100)
+    {
+      logicalzero = false;
+    }
+    if ((currentcounterzero ) >= (75)) // 75 // - prevcounterzerovalue
+    {
+      prevcounterzerovalue = currentcounterzero;
+
+      TCCR0A &= ~(1 << COM0A0);
+      // PORTD &= ~(1 << PD6);
+     
+      
+    }
+  }
+
 }
 
 void initIR()
@@ -148,6 +248,7 @@ void initIR()
     // external interrupt
     EIMSK |= (1<<INT0); // int0 external interrupt aan
     EICRA |= (1<<ISC00); // any logical change generate interrupt
+    EIFR |= (1 << INTF0);
 
 }
 
@@ -209,6 +310,7 @@ void drawLevel(){
 
 
 void getNunchukPosition(){
+
     if(!Nunchuk.getState(nunchuk_ID)){
         return;
     } 
@@ -249,7 +351,7 @@ void getNunchukPosition(){
     }
 
     
-    
+  
 }
 
 void PCF8574_write(byte bytebuffer)
@@ -282,21 +384,55 @@ int main(void)
     {
         // uint8_t data = 0b00001101;
         // sendNEC(data); // Voorbeeld: Verstuur een testsignaal met waarde 0x00FF  
-        
+        // sendnec in een for loop 8 keer aanroepen !!!!
       // nunchuck en display
         getNunchukPosition();
+        // addToBuffer();
+        // sendNEC(2);
+        // if(!end)
+        // {
+        //   bufferIndex = 0;
+        //   for (uint8_t i = 0; i < 8; i++)
+        //   {
+        //     buffer[i] = 0;
+        //   }
+        // }
+        
         if(NunChuckPosition[2])
         {
-          sendNEC(1);
-        } else if(NunChuckPosition[3]) {
+          // sendNEC(0);
+          // sendBegin();
+
+          uint8_t bittosend = 0b00101110;
+          for (uint8_t i = 0; i < 8 ; i++)
+          {
+            uint8_t lsb = bittosend & 0x01;
+            sendNEC(lsb);
+            bittosend = bittosend >> 1;
+            Serial.println(pulseDuration);
+          }
+          Serial.println("einde");
+         
+          // for (int i = 0; i < 8; i++)
+          // {
+          //   Serial.print(buffer[i]);
+          // }
+          // Serial.println("\n");
+
+        } 
+        else if(NunChuckPosition[3]) {
           sendNEC(0);
+          Serial.println(pulseDuration);
+
         }
+       
+
         if(eenofnull == 1)
         {
           PCF8574_write(0b11111111);
         } else if(eenofnull == 0) {
           PCF8574_write((0b00000000));
-        } 
+        }
 
         // Serial.println(pulseDuration);
         // movePlayer(NunChuckPosition[1],NunChuckPosition[0]);
