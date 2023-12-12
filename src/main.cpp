@@ -946,8 +946,8 @@ void moveOverIR()
     uint16_t* coordPtr = walkTo(playerPosX,playerPosY,newX,newY);
     movePlayer(coordPtr[0],coordPtr[1]);
     delete coordPtr;
-    
 }
+
 int main(void)
 {
     sei();
@@ -955,8 +955,18 @@ int main(void)
     Serial.begin(BAUDRATE);
     Wire.begin();
 
-    if(!setupNunchuck()){return 0;}
     if(!setupDisplay()){return 0;}
+    
+    uint8_t f = true;
+    while(!setupNunchuck())
+    {
+      if (f)
+      {
+        tft.fillScreen(ILI9341_BLACK);
+        tft.print("Please connect Nunchuk");
+        f = false;
+      }
+    }
 
     drawLevel();
 
