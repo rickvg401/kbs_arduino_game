@@ -15,6 +15,8 @@
 
 //general
 #define F_CPU 16000000ul
+#define _x_ 0
+#define _y_ 1
 
 //serial
 #define SerialActive //if defined serial is active
@@ -24,7 +26,6 @@
 uint8_t address1 = 0b1010;
 uint8_t address2 = 0b1101;
 
-//nunchuk
 #define nunchuk_ID 0xA4 >> 1
 
 // unsigned char buffer[4];// array to store arduino output
@@ -38,8 +39,10 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
 //game
 const int GAMECLOCK = 15; //ball updates every x times per second
-uint16_t playerPosX;
-uint16_t playerPosY;
+// uint16_t playerPosX;
+// uint16_t playerPosY;
+uint8_t numPlayers = 2;
+uint8_t playablePlayer = 0;
 uint16_t* playerVector = NULL;
 
 const uint16_t FIELD_WIDTH = 32;
@@ -94,10 +97,10 @@ volatile uint8_t bufferdata = 0; // buffer zonder address bits
 
 bool setupDisplay();
 bool setupNunchuck();
-void drawPlayer(uint16_t x, uint16_t y);
+void drawPlayer(uint8_t playerIndex,uint16_t x, uint16_t y);
 void drawPath(uint16_t x, uint16_t y);
-void movePlayer(uint16_t newX,uint16_t newY);
-void movePlayerNunchuk();
+void movePlayer(uint8_t playerIndex, uint16_t newX,uint16_t newY);
+void movePlayerNunchuk(uint8_t playerIndex);
 void drawLevel();
 void getNunchukPosition();
 void PCF8574_write(byte bytebuffer);
@@ -111,22 +114,17 @@ void drawPlayer(uint16_t color);
 void drawCoins();
 void drawGhosts();
 bool canWalk(uint8_t, uint8_t);
-void setSurrounding(uint8_t, uint8_t);
+// void setSurrounding(uint8_t, uint8_t);
 
 
 
 
-enum direction {NORTH, EAST, SOUTH, WEST};
 
-
-
-uint8_t surrounding[4];
-
-
+//game level
 const uint8_t COINS_LENGTH  = 45;
 const uint8_t GHOSTS_LENGTH = 10;
 const uint8_t PLAYER_LENGTH = 12;
-uint8_t coins[45][2] = {
+uint16_t coins[45][2] = {
 {2,12},
 {2,11},
 {3,12},
@@ -173,7 +171,7 @@ uint8_t coins[45][2] = {
 {27,17},
 {19,17},
 };
-uint8_t players[12][2] = {
+uint16_t players[12][2] = {
 {27,22},
 {27,21},
 {28,21},
@@ -187,7 +185,7 @@ uint8_t players[12][2] = {
 {27,20},
 {28,19},
 };
-uint8_t ghosts[10][2] = {
+uint16_t ghosts[10][2] = {
 {5,11},
 {3,11},
 {4,13},
@@ -227,8 +225,6 @@ uint8_t field[FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION] = {
 };
 
 
-uint8_t playerX = 1;
-uint8_t playerY = 1;
 
 // volatile direction cd = EAST;
 
@@ -236,61 +232,7 @@ uint8_t getTileAt (uint8_t x, uint8_t y)
 {
   return (field[y][x / 8] & (1 << (7-(x % 8))) ? 1 : 0);
 }
-/*
-void setupTimer()
-{
-  uint16_t c = ((F_CPU / 1024) / GAMECLOCK ) - 1;
 
-  TCCR1B = (1 << WGM12);
-  OCR1AH = (c >> 8);
-  OCR1AL = c;
-  TIMSK1 = (1 << OCIE1A);
-  TCCR1B |= (1 << CS12) | (1 << CS10);
-}
-*/
-/*
-ISR(TIMER1_COMPA_vect)
-{
-  switch (cd)
-  {
-  case NORTH:
-    if (canWalk(playerX, playerY+1))
-    {
-       drawPlayer(BACKGROUND);
-      playerY += 1;
-      drawPlayer(PLAYER_COLOR);
-    }
-    break;
-
-  case EAST:
-    if (canWalk(playerX+1, playerY))
-      {
-      drawPlayer(BACKGROUND);
-      playerX += 1;
-      drawPlayer(PLAYER_COLOR);
-      }
-    break;
-
-  case SOUTH:
-    if (canWalk(playerX, playerY-1))
-      {
-      drawPlayer(BACKGROUND);
-      playerY -= 1;
-      drawPlayer(PLAYER_COLOR);
-      }
-    break;
-
-  case WEST:
-    if(canWalk(playerX-1, playerY))
-      {
-      drawPlayer(BACKGROUND);
-      playerX -= 1;
-      drawPlayer(PLAYER_COLOR);
-      }
-    break;
-  }
-}
-*/
 void drawField(uint8_t field[FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION])
 {
   for (uint16_t y = 0; y < FIELD_HEIGHT; y++)
@@ -327,13 +269,13 @@ void drawGhosts(){
     tft.fillRoundRect(coins[i][0]*BLOCK_SIZE, coins[i][1]*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE,5, GHOST_COLOR);
   }
 }
-void setSurrounding(uint8_t x, uint8_t y)
-{
-  surrounding[0] = getTileAt(x, y+1); //north
-  surrounding[1] = getTileAt(x+1, y); //east
-  surrounding[2] = getTileAt(x, y-1); //south
-  surrounding[3] = getTileAt(x-1, y); //west
-}
+// void setSurrounding(uint8_t x, uint8_t y)
+// {
+//   surrounding[0] = getTileAt(x, y+1); //north
+//   surrounding[1] = getTileAt(x+1, y); //east
+//   surrounding[2] = getTileAt(x, y-1); //south
+//   surrounding[3] = getTileAt(x-1, y); //west
+// }
 
 bool isNotWall(uint8_t x, uint8_t y)
 {//x ,y grid coord
@@ -653,34 +595,38 @@ bool setupNunchuck(){
 }
 
 void drawPacmen(uint16_t x,uint16_t y){
+  uint16_t color  = PLAYER_COLOR;
   uint8_t r = (BLOCK_SIZE/2)-1;
   uint8_t maxBite = BLOCK_SIZE*0.4;//height of pacmen bite
   uint8_t bite = maxBite;
   // tft.fillRect(x,y,BLOCK_SIZE,BLOCK_SIZE,PLAYER_COLOR);
-  tft.fillCircle(x+(BLOCK_SIZE/2),y+(BLOCK_SIZE/2),r,PLAYER_COLOR);
+  tft.fillCircle(x+(BLOCK_SIZE/2),y+(BLOCK_SIZE/2),r,color);
   tft.fillTriangle(x+(BLOCK_SIZE/2),y+(BLOCK_SIZE/2),(x+BLOCK_SIZE)-1,(y+(BLOCK_SIZE/2))+(bite/2),(x+BLOCK_SIZE)-1,(y+(BLOCK_SIZE/2))-(bite/2),BACKGROUND);
 
 }
 
 
-void drawPlayer(uint16_t x, uint16_t y){
+void drawPlayer(uint8_t playerIndex , uint16_t x, uint16_t y){
 
     // tft.fillRect(playerX*BLOCK_SIZE, playerY*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE, PLAYER_COLOR);
     // tft.fillRect(x,y,BLOCK_SIZE,BLOCK_SIZE,PLAYER_COLOR);
     drawPacmen(x,y);
 
+    players[playerIndex][_x_] = x;
+    players[playerIndex][_y_] = y;
 
-    playerPosX = x;
-    playerPosY = y;
+    // playerPosX = x;
+    // playerPosY = y;
 }
 
 void drawPath(uint16_t x, uint16_t y){
     tft.fillRect(x,y,BLOCK_SIZE,BLOCK_SIZE,BACKGROUND);
 }
 
-void movePlayer(uint16_t newX,uint16_t newY){
-    drawPath(playerPosX,playerPosY);
-    drawPlayer(newX,newY);
+void movePlayer(uint8_t playerIndex,uint16_t newX,uint16_t newY){
+
+    drawPath(players[playerIndex][_x_],players[playerIndex][_y_]);
+    drawPlayer(playerIndex,newX,newY);
 }
 uint16_t* xyToVector(uint16_t x0,uint16_t y0,uint16_t x1,uint16_t y1){
   uint16_t* vector = new uint16_t[2];
@@ -789,16 +735,16 @@ uint16_t* vectorToXY(uint16_t xb,uint16_t yb,uint16_t* vector){
   return xy ;
 }
 
-void movePlayerNunchuk(){
+void movePlayerNunchuk(uint8_t playerIndex){
     
     
     
-    uint16_t newX = playerPosX + ((NunChuckPosition[0]-128)/100*1);
-    uint16_t newY = playerPosY + ((NunChuckPosition[1]-128)/100*1);
+    uint16_t newX = players[playerIndex][_x_] + ((NunChuckPosition[0]-128)/100*1);
+    uint16_t newY = players[playerIndex][_y_] + ((NunChuckPosition[1]-128)/100*1);
     
-    uint16_t* coordPtr = walkTo(playerPosX,playerPosY,newX,newY);
+    uint16_t* coordPtr = walkTo(players[playerIndex][_x_],players[playerIndex][_y_],newX,newY);
     // playerVector = xyToVector(playerPosX,playerPosY,coordPtr[0],coordPtr[1]);
-    movePlayer(coordPtr[0],coordPtr[1]);
+    movePlayer(playerIndex,coordPtr[0],coordPtr[1]);
     delete coordPtr;
     
     
@@ -813,7 +759,8 @@ void drawLevel(){
   drawField(&field[0]);
   drawCoins();
   drawGhosts();
-  drawPlayer(players[0][0]*BLOCK_SIZE,players[0][1]*BLOCK_SIZE);
+  drawPlayer(0,players[0][_x_]*BLOCK_SIZE,players[0][_y_]*BLOCK_SIZE);
+  drawPlayer(1,players[1][_x_]*BLOCK_SIZE,players[1][_y_]*BLOCK_SIZE);
 }
 
 
@@ -913,11 +860,11 @@ void sendCommand(uint8_t address, uint8_t command)
 }
 
 
-void moveOverIR()
+void moveOverIR(uint8_t playerIndex)
 {
   
-    uint16_t newX = playerPosX;
-    uint16_t newY = playerPosY;
+    uint16_t newX = players[playerIndex][_x_];
+    uint16_t newY = players[playerIndex][_y_];
 
       // if(buffer == 0b1011){
       //   newX = playerPosX;
@@ -943,8 +890,8 @@ void moveOverIR()
         Serial.println("bover");
       }
 
-    uint16_t* coordPtr = walkTo(playerPosX,playerPosY,newX,newY);
-    movePlayer(coordPtr[0],coordPtr[1]);
+    uint16_t* coordPtr = walkTo(players[playerIndex][_x_],players[playerIndex][_y_],newX,newY);
+    movePlayer(playerIndex,coordPtr[0],coordPtr[1]);
     delete coordPtr;
     
 }
@@ -968,11 +915,12 @@ int main(void)
         // sendnec in een for loop 8 keer aanroepen !!!!
       // nunchuck en display
         getNunchukPosition();
-        // sendCommand(0b1011, nunchuckWrap());
+        // sendCommand(0b1101, nunchuckWrap());
         // Serial.print("buffer result-> ");
+        // Serial.println(buffer);
 
-        moveOverIR();
-        movePlayerNunchuk();
+        moveOverIR(1);
+        movePlayerNunchuk(playablePlayer);
         // delay(100);
 
         
