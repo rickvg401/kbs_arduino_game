@@ -53,6 +53,8 @@ const uint8_t FIELD_DIVISION = 8;
 #define BACKGROUND  ILI9341_BLACK
 #define COIN_COLOR  TFT_GOLD
 
+const uint8_t playerSpeed = 1*BLOCK_SIZE;
+
 // 7 segment display
 #define PCF8574_i2cAdr 0x21
 void PCF8574_write(byte bytebuffer);
@@ -85,8 +87,9 @@ volatile uint16_t currentcounterbegin = 0;
 
 // buffer
 // uint16_t bufferResult = 0;
-uint8_t bufferIndex = 0; // Huidige index in de buffer
-uint16_t buffer = 0;
+volatile uint8_t bufferIndex = 0; // Huidige index in de buffer
+volatile uint16_t buffer = 0;
+volatile uint8_t bufferdata = 0; // buffer zonder address bits
 
 
 bool setupDisplay();
@@ -428,10 +431,10 @@ uint16_t* walkTo(uint16_t xFrom, uint16_t yFrom,uint16_t xTo,uint16_t yTo){
   // getTileAt()
   // uint16_t coords[2]= new uint16_t {100,230};
   
-  Serial.print("=snap/");
-  Serial.print(xg_m*BLOCK_SIZE);
-  Serial.print(":");
-  Serial.print(yg_m*BLOCK_SIZE);
+  // Serial.print("=snap/");
+  // Serial.print(xg_m*BLOCK_SIZE);
+  // Serial.print(":");
+  // Serial.print(yg_m*BLOCK_SIZE);
 
   // xTo = xg_m*BLOCK_SIZE;//snap x
   // yTo = yg_m*BLOCK_SIZE;//snap y
@@ -517,6 +520,7 @@ ISR(INT0_vect)
     if (pulseDuration > 290 && pulseDuration < 320)
     {
       end = 1;
+      bufferdata = buffer >> 4;
     }
     if (pulseDuration > 260 && pulseDuration < 280) // 552 // 565
     {
@@ -911,41 +915,38 @@ void sendCommand(uint8_t address, uint8_t command)
 
 void moveOverIR()
 {
-    drawPath(playerPosX,playerPosY);
-    uint16_t newX = 255;
-    uint16_t newY = 255;
+  
+    uint16_t newX = playerPosX;
+    uint16_t newY = playerPosY;
 
-      if(buffer == 0){
-        newX = 255;
-        newY = 255;
-      }
-      if (buffer & (1 >> 3)) // 1000 <--
+      // if(buffer == 0b1011){
+      //   newX = playerPosX;
+      //   newY = playerPosY;
+      // }
+
+      if (bufferdata & (1 << 3)) // 1000 <--
       {
-        // uint16_t newX = playerPosX + ((NunChuckPosition[0]-128)/100*1);
-        // uint16_t newY = playerPosY + ((NunChuckPosition[1]-128)/100*1);
+        newX += playerSpeed;
+        // newY
       }
-      else if (buffer & (1 >> 2)) // 0100 -->
+      else if (bufferdata & (1 << 2)) // 0100 -->
       {
-        // uint16_t newX = playerPosX + ((NunChuckPosition[0]-128)/100*1);
-        // uint16_t newY = playerPosY + ((NunChuckPosition[1]-128)/100*1);
+       newX-=playerSpeed;
       }
-      else if (buffer & (1 >> 1)) // 0010 v
+      else if (bufferdata & (1 << 1)) // 0010 v
       {
-        // uint16_t newX = playerPosX + ((NunChuckPosition[0]-128)/100*1);
-        // uint16_t newY = playerPosY + ((NunChuckPosition[1]-128)/100*1);
+        newY+=playerSpeed;
       }
-      else if (buffer == 1) // 0001 ^
+      else if (bufferdata == 1 ) // 0001 ^
       {
-        // uint16_t newX = playerPosX + ((NunChuckPosition[0]-128)/100*1);
-        // uint16_t newY = playerPosY + ((NunChuckPosition[1]-128)/100*1);
+        newY-=playerSpeed;
+        Serial.println("bover");
       }
 
-    // uint16_t newX = playerPosX + ((NunChuckPosition[0]-128)/100*1);
-    // uint16_t newY = playerPosY + ((NunChuckPosition[1]-128)/100*1);
-
-
-
-    drawPlayer(newX,newY);
+    uint16_t* coordPtr = walkTo(playerPosX,playerPosY,newX,newY);
+    movePlayer(coordPtr[0],coordPtr[1]);
+    delete coordPtr;
+    
 }
 int main(void)
 {
@@ -967,10 +968,10 @@ int main(void)
         // sendnec in een for loop 8 keer aanroepen !!!!
       // nunchuck en display
         getNunchukPosition();
-        sendCommand(0b1011, nunchuckWrap());
-        Serial.print("buffer result-> ");
-        Serial.println(buffer);
+        // sendCommand(0b1011, nunchuckWrap());
+        // Serial.print("buffer result-> ");
 
+        moveOverIR();
         movePlayerNunchuk();
         // delay(100);
 
