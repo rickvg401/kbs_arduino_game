@@ -12,8 +12,13 @@
 #define SerialActive //if defined serial is active
 #define BAUDRATE 9600
 
+// Arduino IR address
+uint8_t address1 = 0b1010;
+uint8_t address2 = 0b1101;
+
 //nunchuk
 #define nunchuk_ID 0xA4 >> 1
+
 // unsigned char buffer[4];// array to store arduino output
 uint8_t NunChuckPosition[4];
 bool NunChuckPositionDivided = false;
@@ -58,7 +63,9 @@ volatile uint16_t currentcounterend = 0;
 volatile uint16_t currentcounterbegin = 0;
 
 // buffer
-uint8_t bufferResult = 0;
+// uint16_t bufferResult = 0;
+uint8_t bufferIndex = 0; // Huidige index in de buffer
+uint16_t buffer = 0;
 
 bool setupDisplay();
 bool setupNunchuck();
@@ -70,8 +77,8 @@ void drawLevel();
 void getNunchukPosition();
 void PCF8574_write(byte bytebuffer);
 void addToBuffer();
-// uint8_t clearbuffer();
 uint8_t nunchuckWrap();
+void moveOverIR();
 
 void sendNEC(uint8_t data) {
  
@@ -117,40 +124,6 @@ void sendBegin()
     }
 }
 
-
-
-uint8_t bufferIndex = 0; // Huidige index in de buffer
-uint8_t buffer = 0;
-void addToBuffer() {
-    
-    // Voeg het bit toe aan het juiste byte in de buffer
-    if (eenofnull == 1) {
-
-      buffer |= (1 << bufferIndex); // Zet het bit op 1
-      Serial.println("adding 1 to buffer");
-
-      bufferIndex++; // Verhoog de bufferindex voor het volgende bit
-    } else if(eenofnull == 0){
-
-      buffer &= ~(1 << bufferIndex); // Zet het bit op 0
-      Serial.println("adding 0 to buffer");
-
-      bufferIndex++; // Verhoog de bufferindex voor het volgende bit
-    }
-    
-}
-
-// uint8_t clearbuffer()
-// {
-//   uint8_t data = 0;
-//   for (uint8_t i = 0; i < 8; i++)
-//   {
-//     data |= buffer[i] << i;
-//   }
-
-//   return data;
-// }
-
 ISR(INT0_vect)
 {
   uint8_t pinstatus = (PIND & (1<<PD2));
@@ -164,36 +137,27 @@ ISR(INT0_vect)
     // bit in het resulterende buffer.
      currentCounterValue = counter;
      pulseDuration = currentCounterValue - prevCounterValue;
+    if (pulseDuration > 290 && pulseDuration < 320)
+    {
+      end = 1;
+    }
+    if (pulseDuration > 260 && pulseDuration < 280) // 552 // 565
+    {
+      end = 0;
+      buffer = 0;
+      bufferIndex = 0;
+    }
     if(pulseDuration > 160 && pulseDuration < 190) {
       // Voeg '1' toe aan buffer
       eenofnull = 1; 
-      if(bufferIndex == 4)
-      {
-        buffer = 0;
-        bufferIndex = 0;
-      }
       buffer |= (1 << bufferIndex); // Zet het bit op 1 
       bufferIndex++;
 
-    } else if (pulseDuration < 85 && pulseDuration > 70) {
+    } else if (pulseDuration < 95 && pulseDuration > 65) {
       // Voeg '0' toe aan buffer
       eenofnull = 0;
-      if(bufferIndex == 4)
-      {
-        buffer = 0;
-        bufferIndex = 0;
-      }
       buffer &= ~(1 << bufferIndex); // Zet het bit op 0
       bufferIndex++;
-
-    } else if (pulseDuration < 290 && pulseDuration > 320)
-    {
-      end = true;
-      
-    } else if (pulseDuration < 552 && pulseDuration > 565)
-    {
-      end = false;
-      
     }
 
  } else {
@@ -216,14 +180,9 @@ ISR(TIMER0_COMPA_vect)
     {
       logicalone = false;
     }
-    if ((currentcounterone ) >= (175)) // 175 // - prevcounteronevalue
-    {
-      // prevcounteronevalue = currentcounterone;
-      
+    if ((currentcounterone ) >= (175)) 
+    { 
       TCCR0A &= ~(1 << COM0A0);
-      // PORTD &= ~(1 << PD6);
-      
-
     }
   }
 
@@ -234,23 +193,20 @@ ISR(TIMER0_COMPA_vect)
     {
       logicalzero = false;
     }
-    if ((currentcounterzero ) >= (75)) // 75 // - prevcounterzerovalue
+    if ((currentcounterzero ) >= (75)) 
     {
-      // prevcounterzerovalue = currentcounterzero;
-
       TCCR0A &= ~(1 << COM0A0);
-      // PORTD &= ~(1 << PD6);
     }
   }
   //begin 555
   if(logicalbegin == true)
   {
     currentcounterbegin = counter;
-    if(currentcounterbegin > 575)
+    if(currentcounterbegin > 750)
     {
       logicalbegin = false;
     }
-    if((currentcounterbegin) >= (555))
+    if((currentcounterbegin) >= (268)) 
     {
       TCCR0A &= ~(1 << COM0A0);
     }
@@ -416,22 +372,71 @@ uint8_t nunchuckWrap(){
   return nunchuckData;
   }
 
-void sendNunchuckoverIR(uint8_t data)
+void sendByte(uint8_t byte, bool address)
 {
-   uint8_t bittosend = data;
-   sendBegin();
+  if(!address){
+    for (uint8_t bit = 0; bit < 8; bit++)
+    {
+      sendNEC((byte >> bit) & 1);
+      // Serial.println(pulseDuration);
+    }
+  }
+  if(address)
+  {
+    for (uint8_t bit = 0; bit < 4; bit++)
+    {
+      sendNEC((byte >> bit) & 1);
+      // Serial.println(pulseDuration);
+    } 
+  }
+  
+}
 
-   for (uint8_t i = 0; i < 4; i++)
-   {
-     uint8_t lsb = bittosend & 0x01;
-     sendNEC(lsb);
-     bittosend = bittosend >> 1;
-    
-   }   
-   Serial.println(buffer);
-   sendEnd();
+void sendCommand(uint8_t address, uint8_t command)
+{
+  sendBegin();
+  sendByte(address,true);
+  sendByte(command,false);
+  sendEnd();
+}
+
+void moveOverIR()
+{
+    drawPath(playerPosX,playerPosY);
+    uint16_t newX = 255;
+    uint16_t newY = 255;
+
+      if(buffer == 0){
+        newX = 255;
+        newY = 255;
+      }
+      if (buffer & (1 >> 3)) // 1000 <--
+      {
+        // uint16_t newX = playerPosX + ((NunChuckPosition[0]-128)/100*1);
+        // uint16_t newY = playerPosY + ((NunChuckPosition[1]-128)/100*1);
+      }
+      else if (buffer & (1 >> 2)) // 0100 -->
+      {
+        // uint16_t newX = playerPosX + ((NunChuckPosition[0]-128)/100*1);
+        // uint16_t newY = playerPosY + ((NunChuckPosition[1]-128)/100*1);
+      }
+      else if (buffer & (1 >> 1)) // 0010 v
+      {
+        // uint16_t newX = playerPosX + ((NunChuckPosition[0]-128)/100*1);
+        // uint16_t newY = playerPosY + ((NunChuckPosition[1]-128)/100*1);
+      }
+      else if (buffer == 1) // 0001 ^
+      {
+        // uint16_t newX = playerPosX + ((NunChuckPosition[0]-128)/100*1);
+        // uint16_t newY = playerPosY + ((NunChuckPosition[1]-128)/100*1);
+      }
+
+    // uint16_t newX = playerPosX + ((NunChuckPosition[0]-128)/100*1);
+    // uint16_t newY = playerPosY + ((NunChuckPosition[1]-128)/100*1);
 
 
+
+    drawPlayer(newX,newY);
 }
 int main(void)
 {
@@ -472,7 +477,7 @@ int main(void)
 
         // Serial.println(pulseDuration);
         // movePlayer(NunChuckPosition[1],NunChuckPosition[0]);
-        movePlayerNunchuk();
+        // movePlayerNunchuk();
         
     } 
     return 0;
