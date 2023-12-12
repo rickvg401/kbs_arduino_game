@@ -78,7 +78,6 @@ volatile bool logicalbegin = false;
 
 volatile bool end = true;
 
-
 volatile uint16_t currentcounterone = 0;
 volatile uint16_t currentcounterzero = 0;
 
@@ -519,12 +518,12 @@ ISR(INT0_vect)
      pulseDuration = currentCounterValue - prevCounterValue;
     if (pulseDuration > 290 && pulseDuration < 320)
     {
-      end = 1;
+      end = true;
       bufferdata = buffer >> 4;
     }
     if (pulseDuration > 260 && pulseDuration < 280) // 552 // 565
     {
-      end = 0;
+      end = false;
       buffer = 0;
       bufferIndex = 0;
     }
@@ -597,7 +596,7 @@ ISR(TIMER0_COMPA_vect)
   if(logicalend == true)
   {
     currentcounterend = counter;
-    if(currentcounterend > 5000) // 325
+    if(currentcounterend > 500) // 325
     {
       logicalend = false;
     }
@@ -890,7 +889,7 @@ void sendByte(uint8_t byte, bool address)
     for (uint8_t bit = 0; bit < 8; bit++)
     {
       sendNEC((byte >> bit) & 1);
-      // Serial.println(pulseDuration);
+      
     }
   }
   if(address)
@@ -968,11 +967,12 @@ int main(void)
         // sendnec in een for loop 8 keer aanroepen !!!!
       // nunchuck en display
         getNunchukPosition();
-        // sendCommand(0b1011, nunchuckWrap());
+        sendCommand(0b1011, nunchuckWrap());
         // Serial.print("buffer result-> ");
-
-        moveOverIR();
-        movePlayerNunchuk();
+        // Serial.println(buffer);
+ 
+        // moveOverIR();
+        // movePlayerNunchuk();
         // delay(100);
 
         
