@@ -9,13 +9,10 @@ struct music test;
 struct music pacmanTheme;
 namespace notes
 {
-  uint16_t testNotes[] = {_C3, _D3, _E3, _F3};
-  uint16_t testDurations[] = {100, 100, 100, 100};
 
-  uint16_t pacmanNotes[] = {_B4, _A5S, _C5S, _D5, _C5, _C6, _G5, _E5, _C6, _G5, _E5, _B4, _A5S, _C5S, _D5, _D5, _E5, _F5, _E5, _G5, _G5, _G5, _A5, _B5};
-  uint16_t pacmanDurations[sizeof(pacmanNotes) / sizeof(uint16_t)] = {100, 100, 100, 100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100};
+  uint16_t pacmanNotes[] = {_C4, _C5, _G4, _E4, _C5, _G4, _C4S, _C5S, _G4S, _F4, _G4S, _F4, _C4, _C4, _C5, _G4, _E4, _C5, _G4, _E4, _D4, _D4S,_E4, _E4, _F4, _F4S, _F4, _F4S, _G4, _C5}; 
+  uint16_t pacmanDurations[sizeof(pacmanNotes) / sizeof(uint16_t)] = {300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100};
 }
-
 
 int main()
 {
@@ -26,7 +23,8 @@ int main()
 
   setupBuzzer();
   loadMusic(&test);
-  setVolume(100);
+  setVolume(50);
+  enableLoop();
   playMusic();
   sei();
 
