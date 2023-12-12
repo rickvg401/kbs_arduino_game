@@ -35,6 +35,7 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 const int GAMECLOCK = 15; //ball updates every x times per second
 uint16_t playerPosX;
 uint16_t playerPosY;
+uint16_t* playerVector = NULL;
 
 const uint16_t FIELD_WIDTH = 32;
 const uint16_t FIELD_HEIGHT = 24; // could be uint8_t
@@ -287,6 +288,12 @@ void drawCoins(){
     tft.fillRoundRect(coins[i][0]*BLOCK_SIZE, coins[i][1]*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE,100, COIN_COLOR);
   }
 }
+// void moveGhost(){
+//   for(int i=0;i<GHOSTS_LENGTH;i++){
+//     tft.fillRoundRect(coins[i][0]*BLOCK_SIZE, coins[i][1]*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE,5, BACKGROUND);
+//   }
+// }
+
 void drawGhosts(){
   for(int i=0;i<GHOSTS_LENGTH;i++){
     tft.fillRoundRect(coins[i][0]*BLOCK_SIZE, coins[i][1]*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE,5, GHOST_COLOR);
@@ -355,20 +362,20 @@ uint16_t* walkTo(uint16_t xFrom, uint16_t yFrom,uint16_t xTo,uint16_t yTo){
   int yg_rd = yg_d;//main right down
 
   // tft.width();
-  Serial.print(xTo);
-  Serial.print(":");
-  Serial.print(yTo);
+  // Serial.print(xTo);
+  // Serial.print(":");
+  // Serial.print(yTo);
 
-  Serial.print(" ");
-  Serial.print(xg);
-  Serial.print(":");
-  Serial.print(yg);
+  // Serial.print(" ");
+  // Serial.print(xg);
+  // Serial.print(":");
+  // Serial.print(yg);
   
 
-  Serial.print("=xg_m/");
-  Serial.print(xg_m);
-  Serial.print(":");
-  Serial.print(yg_m);
+  // Serial.print("=xg_m/");
+  // Serial.print(xg_m);
+  // Serial.print(":");
+  // Serial.print(yg_m);
 
   // Serial.print("=xg_d/");
   // Serial.print(xg_d);
@@ -573,38 +580,112 @@ void movePlayer(uint16_t newX,uint16_t newY){
     drawPath(playerPosX,playerPosY);
     drawPlayer(newX,newY);
 }
-// uint16_t xyToVector(uint16_t x0,uint16_t y0,uint16_t x1,uint16_t y1){
-//   uint16_t vectorDir;
+uint16_t* xyToVector(uint16_t x0,uint16_t y0,uint16_t x1,uint16_t y1){
+  uint16_t* vector = new uint16_t[2];
   
-//   uint16_t vx = x0 - x1;
-//   uint16_t vy = y0 - y1;
+  uint16_t vx = x0 - x1;
+  uint16_t vy = y0 - y1;
 
-//   bool xp = false ;//x positive 
-//   bool yp =false; //y positive 
-
+  uint16_t l =(uint16_t) round(sqrt((sq(vx)+sq(vy))));//calc length of vector
 
 
-//   // tan-1(y/x)
-//   float dir =  atan((vy/vx))*RAD_TO_DEG;
-//   if(!xp){
-//     dir = dir+90
+  if(x0==x1 && y0==y1){//1
+    vector[0] = 0;
+    vector[1] = 0;
+  }else
 
-//   }
+  if(x0<x1 && y0==y1){//2
+    vector[0] = 90;
+    vector[1] = l;
+  }else
+
+  if(x0==x1 && y0<y1){//3
+    vector[0] = 0;
+    vector[1] = l;
+  }else
+
+  if(x0>x1 && y0==y1){//4
+    vector[0] = 270;
+    vector[1] = l;
+  }else
   
+  if(x0==x1 && y0>y1){//5
+    vector[0] = 180;
+    vector[1] = l;
+  }else
   
-//   Serial.print("atan:");
-//   Serial.print(dir);
+  if(x0<x1 && y0>y1){//6
+    vector[0] = 135;
+    vector[1] = l;
+  }else
+
+  if(x0<x1 && y0<y1){//7
+    vector[0] = 45;
+    vector[1] = l;
+  }else
+
+  if(x0>x1 && y0<y1){//8
+    vector[0] = 315;
+    vector[1] = l;
+  }else
+
+  if(x0>x1 && y0>y1){//9
+    vector[0] = 225;
+    vector[1] = l;
+  }else{
+    Serial.println("unkown");
+  }
   
+  return vector;
+}
 
-
-//   return vectorDir;
-// }
-
-// uint16_t* vectorToXY(uint16_t beginX,uint16_t beginY,uint16_t vector){
+uint16_t* vectorToXY(uint16_t xb,uint16_t yb,uint16_t* vector){
+  uint16_t* xy = new uint16_t[2];
   
+  uint16_t l = vector[1];
+  uint16_t s = round(sqrt((sq(l)/2)));//calc length to position
 
-//   return XY;
-// }
+  if(vector[0] == 0 && vector[1] == 0){
+    xy[0] = 0;
+    xy[1] = 0;
+  }else
+  if(vector[0] == 0){
+    xy[0] = xb;
+    xy[1] = yb+l;
+  }else
+  if(vector[0] == 45){
+    xy[0] = xb+s;
+    xy[1] = yb+s;
+  }else
+  if(vector[0] == 90){
+    xy[0] = xb+l;
+    xy[1] = yb; 
+  }else
+  if(vector[0] == 135){
+    xy[0] = xb+s;
+    xy[1] = yb-s;
+  }else
+  if(vector[0] == 180){
+    xy[0] = xb;
+    xy[1] = yb-l;
+  }else
+  if(vector[0] == 225){
+    xy[0] = xb-s;
+    xy[1] = yb-s;
+  }else
+  if(vector[0] == 270){
+    xy[0] = xb-l;
+    xy[1] = yb;
+  }else
+  if(vector[0] == 315){
+    xy[0] = xb-s;
+    xy[1] = yb+s;
+  }
+
+
+
+  return xy ;
+}
 
 void movePlayerNunchuk(){
     
@@ -613,17 +694,16 @@ void movePlayerNunchuk(){
     uint16_t newX = playerPosX + ((NunChuckPosition[0]-128)/100*1);
     uint16_t newY = playerPosY + ((NunChuckPosition[1]-128)/100*1);
     
-    // if(playerPosX == newX || playerPosY == newY){
-      
-    // }else{}
-
     uint16_t* coordPtr = walkTo(playerPosX,playerPosY,newX,newY);
-    // uint16_t vector = xyToVector(playerPosX,playerPosY,newX,newY);
-
-    drawPath(playerPosX,playerPosY);
-    drawPlayer(coordPtr[0],coordPtr[1]);
-
+    // playerVector = xyToVector(playerPosX,playerPosY,coordPtr[0],coordPtr[1]);
+    movePlayer(coordPtr[0],coordPtr[1]);
     delete coordPtr;
+    
+    
+
+    
+    
+
 }
 
 void drawLevel(){
@@ -686,6 +766,46 @@ void PCF8574_write(byte bytebuffer)
   Wire.endTransmission();
 }
 
+/*
+void vectorTest(){
+   uint16_t x0 = 0;
+    uint16_t y0 = 0;
+    
+    uint16_t x1 = 30;
+    uint16_t y1 = 10;
+
+    uint16_t* vector = xyToVector(x0,y0,x1,y1);
+    Serial.print("/");
+    Serial.print(vector[0]);
+    Serial.print(":");
+    Serial.print(vector[1]);
+    Serial.println(" ");
+
+    uint16_t* xy = vectorToXY(x0,y0,vector);
+    Serial.print(":");
+
+    Serial.print(xy[0]);
+    Serial.print(":");
+    Serial.print(xy[1]);
+    Serial.println(" ");
+
+    uint16_t* vector2 = xyToVector(x0,y0,xy[0],xy[1]);
+    Serial.print("//");
+    Serial.print(vector2[0]);
+    Serial.print("::");
+    Serial.print(vector2[1]);
+    Serial.println(" ");
+
+    uint16_t* xy2 = vectorToXY(x0,y0,vector2);
+    Serial.print("::");
+
+    Serial.print(xy2[0]);
+    Serial.print(":");
+    Serial.print(xy2[1]);
+    Serial.println(" ");
+
+}
+*/
 
 int main(void)
 {
@@ -700,6 +820,14 @@ int main(void)
 
     drawLevel();
 
+    
+
+
+
+
+    
+
+    // Serial.print()
     while(1)
     {
         // uint8_t data = 0b00001101;
@@ -723,7 +851,7 @@ int main(void)
         // Serial.println(pulseDuration);
         // movePlayer(NunChuckPosition[1],NunChuckPosition[0]);
         movePlayerNunchuk();
-        delay(50);
+        // delay(100);
         
     } 
     return 0;
