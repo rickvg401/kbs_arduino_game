@@ -3,8 +3,6 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-#include <Arduino.h> // DELETE IN MAIN
-
 // Timer 2 and pin OC2B (pin 3 on arduino) is used for sound
 
 volatile uint32_t duration = 0;
@@ -39,8 +37,6 @@ ISR(TIMER2_OVF_vect)
       } else 
       {
         stopMusic();
-        Serial.println(musicCt);
-        Serial.println("stop");
         return;
       }
     }
@@ -73,7 +69,6 @@ void setTone(uint16_t frequency) // frequency in hertz
   uint16_t ocr = (31250 / frequency) - 1;
   OCR1AH = (ocr >> 8);
   OCR1AL = ocr;
-  Serial.println(ocr);
 }
 
 void loadMusic(music* musicStruct)
