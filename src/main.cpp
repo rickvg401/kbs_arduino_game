@@ -44,6 +44,7 @@ const int GAMECLOCK = 15; //ball updates every x times per second
 uint8_t numPlayers = 2;
 uint8_t playablePlayer = 0;
 uint16_t* playerVector = NULL;
+uint8_t nunchuckData = 0b0000;
 
 const uint16_t FIELD_WIDTH = 32;
 const uint16_t FIELD_HEIGHT = 24; // could be uint8_t
@@ -737,10 +738,28 @@ uint16_t* vectorToXY(uint16_t xb,uint16_t yb,uint16_t* vector){
 
 void movePlayerNunchuk(uint8_t playerIndex){
     
+    uint16_t newX = players[playerIndex][_x_];
+    uint16_t newY = players[playerIndex][_y_];
     
-    
-    uint16_t newX = players[playerIndex][_x_] + ((NunChuckPosition[0]-128)/100*1);
-    uint16_t newY = players[playerIndex][_y_] + ((NunChuckPosition[1]-128)/100*1);
+    if (nunchuckData & (1 << 3)) // 1000 <--
+      {
+        newX += playerSpeed;
+        // newY
+      }
+      else if (nunchuckData & (1 << 2)) // 0100 -->
+      {
+       newX-=playerSpeed;
+      }
+      else if (nunchuckData & (1 << 1)) // 0010 v
+      {
+        newY+=playerSpeed;
+      }
+      else if (nunchuckData == 1 ) // 0001 ^
+      {
+        newY-=playerSpeed;
+      }
+
+
     
     uint16_t* coordPtr = walkTo(players[playerIndex][_x_],players[playerIndex][_y_],newX,newY);
     // playerVector = xyToVector(playerPosX,playerPosY,coordPtr[0],coordPtr[1]);
@@ -817,7 +836,7 @@ void PCF8574_write(byte bytebuffer)
 }
 
 uint8_t nunchuckWrap(){
-  uint8_t nunchuckData = 0b0000;
+  nunchuckData = 0b0000;
   if(NunChuckPosition[0] > 128){
       nunchuckData = (1<<3) | nunchuckData;
   } else if( NunChuckPosition[0] < 128 ){
@@ -866,10 +885,6 @@ void moveOverIR(uint8_t playerIndex)
     uint16_t newX = players[playerIndex][_x_];
     uint16_t newY = players[playerIndex][_y_];
 
-      // if(buffer == 0b1011){
-      //   newX = playerPosX;
-      //   newY = playerPosY;
-      // }
 
       if (bufferdata & (1 << 3)) // 1000 <--
       {
@@ -887,7 +902,6 @@ void moveOverIR(uint8_t playerIndex)
       else if (bufferdata == 1 ) // 0001 ^
       {
         newY-=playerSpeed;
-        Serial.println("bover");
       }
 
     uint16_t* coordPtr = walkTo(players[playerIndex][_x_],players[playerIndex][_y_],newX,newY);
@@ -915,7 +929,7 @@ int main(void)
         // sendnec in een for loop 8 keer aanroepen !!!!
       // nunchuck en display
         getNunchukPosition();
-        // sendCommand(0b1101, nunchuckWrap());
+        sendCommand(0b1101, nunchuckWrap());
         // Serial.print("buffer result-> ");
         // Serial.println(buffer);
 
