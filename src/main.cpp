@@ -957,15 +957,7 @@ int main(void)
     if(!setupNunchuck()){return 0;}
     if(!setupDisplay()){return 0;}
 
-
     drawLevel();
-
-    
-
-
-
-
-    
 
     // Serial.print()
     while(1)
@@ -975,8 +967,9 @@ int main(void)
         // sendnec in een for loop 8 keer aanroepen !!!!
       // nunchuck en display
         getNunchukPosition();
-        sendNunchuckoverIR(nunchuckWrap());
-        // Serial.println(bufferResult);
+        sendCommand(0b1011, nunchuckWrap());
+        Serial.print("buffer result-> ");
+        Serial.println(buffer);
 
         movePlayerNunchuk();
         // delay(100);
