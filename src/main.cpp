@@ -41,14 +41,15 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 const int GAMECLOCK = 15; //ball updates every x times per second
 // uint16_t playerPosX;
 // uint16_t playerPosY;
-uint8_t numPlayers = 2;
+const uint8_t numPlayers = 2;
 uint8_t playablePlayer = 0;
-uint16_t* playerVector = NULL;
+// uint16_t* playerVector = NULL;
 uint8_t nunchuckData = 0b0000;
+// uint16_t playerResult[] = {0,0,0,0,0,0,0,0,0,0,0,0,0};
 
-const uint16_t FIELD_WIDTH = 32;
-const uint16_t FIELD_HEIGHT = 24; // could be uint8_t
-const uint8_t BLOCK_SIZE = 10;
+const uint16_t FIELD_WIDTH = 16;
+const uint16_t FIELD_HEIGHT = 16; // could be uint8_t
+const uint8_t BLOCK_SIZE = 15;
 const uint8_t FIELD_DIVISION = 8;
 
 #define PLAYER_COLOR TFT_YELLOW
@@ -109,7 +110,7 @@ void addToBuffer();
 uint8_t nunchuckWrap();
 void moveOverIR();
 void setupTimer();
-void drawField(uint8_t [FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION]);
+// void drawField(uint8_t [FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION]);
 void walkPlayer(uint8_t, uint8_t);
 void drawPlayer(uint16_t color);
 void drawCoins();
@@ -122,101 +123,49 @@ bool canWalk(uint8_t, uint8_t);
 
 
 //game level
-const uint8_t COINS_LENGTH  = 36;
-const uint8_t GHOSTS_LENGTH = 13;
-const uint8_t PLAYER_LENGTH = 9;
-uint16_t coins[36][2] = {
-{9*BLOCK_SIZE,3*BLOCK_SIZE},
-{8*BLOCK_SIZE,3*BLOCK_SIZE},
-{9*BLOCK_SIZE,4*BLOCK_SIZE},
-{9*BLOCK_SIZE,5*BLOCK_SIZE},
-{8*BLOCK_SIZE,4*BLOCK_SIZE},
-{8*BLOCK_SIZE,5*BLOCK_SIZE},
-{8*BLOCK_SIZE,14*BLOCK_SIZE},
-{3*BLOCK_SIZE,15*BLOCK_SIZE},
-{10*BLOCK_SIZE,13*BLOCK_SIZE},
-{9*BLOCK_SIZE,15*BLOCK_SIZE},
-{14*BLOCK_SIZE,7*BLOCK_SIZE},
-{14*BLOCK_SIZE,15*BLOCK_SIZE},
-{18*BLOCK_SIZE,13*BLOCK_SIZE},
-{21*BLOCK_SIZE,9*BLOCK_SIZE},
-{23*BLOCK_SIZE,8*BLOCK_SIZE},
-{22*BLOCK_SIZE,8*BLOCK_SIZE},
-{24*BLOCK_SIZE,4*BLOCK_SIZE},
-{19*BLOCK_SIZE,13*BLOCK_SIZE},
-{16*BLOCK_SIZE,7*BLOCK_SIZE},
-{23*BLOCK_SIZE,5*BLOCK_SIZE},
-{20*BLOCK_SIZE,6*BLOCK_SIZE},
-{11*BLOCK_SIZE,4*BLOCK_SIZE},
-{20*BLOCK_SIZE,3*BLOCK_SIZE},
-{18*BLOCK_SIZE,4*BLOCK_SIZE},
-{15*BLOCK_SIZE,4*BLOCK_SIZE},
-{28*BLOCK_SIZE,3*BLOCK_SIZE},
-{26*BLOCK_SIZE,18*BLOCK_SIZE},
-{24*BLOCK_SIZE,18*BLOCK_SIZE},
-{26*BLOCK_SIZE,20*BLOCK_SIZE},
-{14*BLOCK_SIZE,18*BLOCK_SIZE},
-{15*BLOCK_SIZE,18*BLOCK_SIZE},
-{18*BLOCK_SIZE,19*BLOCK_SIZE},
-{20*BLOCK_SIZE,19*BLOCK_SIZE},
-{8*BLOCK_SIZE,20*BLOCK_SIZE},
-{6*BLOCK_SIZE,18*BLOCK_SIZE},
-{9*BLOCK_SIZE,18*BLOCK_SIZE},
+const uint8_t COINS_LENGTH  = 7;
+const uint8_t GHOSTS_LENGTH = 0;
+const uint8_t PLAYER_LENGTH = 6;
+uint16_t coins[7][2] = {
+{1*BLOCK_SIZE,1*BLOCK_SIZE},
+{1*BLOCK_SIZE,4*BLOCK_SIZE},
+{5*BLOCK_SIZE,1*BLOCK_SIZE},
+{7*BLOCK_SIZE,1*BLOCK_SIZE},
+{6*BLOCK_SIZE,1*BLOCK_SIZE},
+{11*BLOCK_SIZE,1*BLOCK_SIZE},
+{1*BLOCK_SIZE,10*BLOCK_SIZE},
 };
-uint16_t players[9][2] = {
-{29*BLOCK_SIZE,21*BLOCK_SIZE},
-{29*BLOCK_SIZE,22*BLOCK_SIZE},
-{29*BLOCK_SIZE,20*BLOCK_SIZE},
-{30*BLOCK_SIZE,20*BLOCK_SIZE},
-{30*BLOCK_SIZE,21*BLOCK_SIZE},
-{30*BLOCK_SIZE,22*BLOCK_SIZE},
-{28*BLOCK_SIZE,22*BLOCK_SIZE},
-{28*BLOCK_SIZE,21*BLOCK_SIZE},
-{28*BLOCK_SIZE,20*BLOCK_SIZE},
+bool coinsCatched[7] = {false,false,false,false,false,false,false,};
+uint16_t players[6][2] = {
+{1*BLOCK_SIZE,13*BLOCK_SIZE},
+{1*BLOCK_SIZE,12*BLOCK_SIZE},
+{1*BLOCK_SIZE,14*BLOCK_SIZE},
+{2*BLOCK_SIZE,12*BLOCK_SIZE},
+{2*BLOCK_SIZE,13*BLOCK_SIZE},
+{2*BLOCK_SIZE,14*BLOCK_SIZE},
 };
-uint16_t ghosts[13][2] = {
-{3*BLOCK_SIZE,5*BLOCK_SIZE},
-{5*BLOCK_SIZE,4*BLOCK_SIZE},
-{2*BLOCK_SIZE,3*BLOCK_SIZE},
-{1*BLOCK_SIZE,6*BLOCK_SIZE},
-{2*BLOCK_SIZE,4*BLOCK_SIZE},
-{2*BLOCK_SIZE,5*BLOCK_SIZE},
-{3*BLOCK_SIZE,9*BLOCK_SIZE},
-{1*BLOCK_SIZE,9*BLOCK_SIZE},
-{3*BLOCK_SIZE,11*BLOCK_SIZE},
-{2*BLOCK_SIZE,11*BLOCK_SIZE},
-{6*BLOCK_SIZE,10*BLOCK_SIZE},
-{8*BLOCK_SIZE,9*BLOCK_SIZE},
-{5*BLOCK_SIZE,8*BLOCK_SIZE},
+uint16_t playerResult[6] = {0,0,0,0,0,0,};
+uint16_t ghosts[0][2] = {
 };
+bool ghostsCatched[0] = {};
 uint8_t field[FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION] = {
-{0xFF,0xFF,0xFF,0xFF,},
-{0x80,0x00,0x00,0x01,},
-{0xFF,0xE3,0xFF,0xF1,},
-{0x80,0x22,0x04,0x01,},
-{0x80,0x22,0x04,0x41,},
-{0x80,0x20,0x04,0x41,},
-{0x84,0x60,0xC4,0xC1,},
-{0x87,0x80,0x07,0x9F,},
-{0x80,0x00,0x00,0x1D,},
-{0x80,0x00,0x00,0x17,},
-{0xB4,0x80,0x00,0x1E,},
-{0x84,0x80,0x00,0x1B,},
-{0x85,0x83,0x80,0x1F,},
-{0x84,0x0F,0x80,0x01,},
-{0x84,0x18,0xFC,0x01,},
-{0x80,0x10,0x00,0x01,},
-{0x80,0x10,0x00,0x01,},
-{0xC7,0x80,0x01,0xF1,},
-{0xE0,0x80,0xE1,0x11,},
-{0xF0,0xC7,0x81,0x01,},
-{0xF8,0x00,0x01,0x01,},
-{0xFC,0x00,0x00,0x01,},
-{0xFC,0x00,0x00,0x01,},
-{0xFF,0xFF,0xFF,0xFF,},
+{0xFF,0xFF,},
+{0x80,0x01,},
+{0xA1,0x01,},
+{0xA1,0x01,},
+{0xA1,0x09,},
+{0xA1,0x1D,},
+{0xBF,0x2B,},
+{0x80,0x09,},
+{0x80,0x09,},
+{0x80,0x09,},
+{0x80,0x09,},
+{0x80,0x09,},
+{0x80,0x3F,},
+{0x80,0x3F,},
+{0x80,0x3F,},
+{0xFF,0xFF,},
 };
-
-// volatile direction cd = EAST;
 
 uint8_t getTileAt (uint8_t x, uint8_t y)
 {
@@ -243,24 +192,73 @@ void drawField(uint8_t field[FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION])
 //   tft.fillRect(playerX*BLOCK_SIZE, playerY*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE, PLAYER_COLOR);
 // }
 
+void collectCoin(uint16_t playerIndex,uint16_t coinIndex){
+  // Serial.print("collect coin");
+  playerResult[playerIndex]+=1;
+  coinsCatched[coinIndex] = true;
+  // Serial.print(playerIndex);
+  // Serial.print(":");
+  // Serial.print(playerResult[playerIndex]);
+  // Serial.println(" ");
+
+}
+
+void collectGhost(uint16_t playerIndex,uint16_t ghostIndex){
+  Serial.println("catched a ghost");
+}
+
 void drawCoins(){
   for(int i=0;i<COINS_LENGTH;i++){
     tft.fillRoundRect(coins[i][0], coins[i][1], BLOCK_SIZE, BLOCK_SIZE,100, COIN_COLOR);
   }
 }
 
-void collectCoins(){
-  
+void collision(){
+  for(int p = 0;(p<numPlayers&&p<PLAYER_LENGTH);p++){
+    uint16_t x = players[p][_x_];
+    uint16_t y = players[p][_y_];
 
-  for(int i =0;i<COINS_LENGTH;i++){
+    
+    for(int c =0;c<COINS_LENGTH;c++){
+      if(coins[c][_x_] == x && coins[c][_y_] == y){
+        if(!coinsCatched[c]){
+          collectCoin(p,c);
+        }
+      }
+    }
+
+    for(int g=0;g<GHOSTS_LENGTH;g++){
+      if(ghosts[g][_x_] == x && ghosts[g][_y_] == y){
+        if(!ghostsCatched[g]){
+          collectGhost(p,g);
+        }
+      }
+    }
+
 
   }
+
+  // 
 }
+
+bool endGame(){
+  bool noCoinsExist = true;
+  for(int c =0;c<COINS_LENGTH;c++){
+      if(!coinsCatched[c]){
+        noCoinsExist = false;
+      }
+    }
+
+  return noCoinsExist;  
+}
+
 // void moveGhost(){
 //   for(int i=0;i<GHOSTS_LENGTH;i++){
 //     tft.fillRoundRect(coins[i][0]*BLOCK_SIZE, coins[i][1]*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE,5, BACKGROUND);
 //   }
 // }
+
+
 
 void drawGhosts(){
   for(int i=0;i<GHOSTS_LENGTH;i++){
@@ -394,7 +392,7 @@ uint16_t* walkTo(uint16_t xFrom, uint16_t yFrom,uint16_t xTo,uint16_t yTo){
   // coords[0] = xTo;
   // coords[1] = yTo;
   
-  Serial.println(" ");
+  // Serial.println(" ");
   return coords;
 }
 
@@ -922,13 +920,17 @@ int main(void)
         // sendnec in een for loop 8 keer aanroepen !!!!
       // nunchuck en display
         getNunchukPosition();
-        sendCommand(0b1101, nunchuckWrap());
+        nunchuckWrap();
+        // sendCommand(0b1101, nunchuckWrap());
         // Serial.print("buffer result-> ");
         // Serial.println(buffer);
 
-        moveOverIR(1);
+        // moveOverIR(1);
         movePlayerNunchuk(playablePlayer);
+
+        collision();
         // delay(100);
+        if(endGame()){Serial.println("game ended");return 0;}
 
         
     } 
