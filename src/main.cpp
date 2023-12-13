@@ -122,110 +122,99 @@ bool canWalk(uint8_t, uint8_t);
 
 
 //game level
-const uint8_t COINS_LENGTH  = 45;
-const uint8_t GHOSTS_LENGTH = 10;
-const uint8_t PLAYER_LENGTH = 12;
-uint16_t coins[45][2] = {
-{2,12},
-{2,11},
-{3,12},
-{3,13},
-{4,12},
-{5,12},
-{5,13},
-{4,11},
-{4,10},
-{3,10},
-{3,9},
-{4,8},
-{3,8},
-{4,1},
-{6,1},
-{6,2},
-{5,3},
-{8,2},
-{6,5},
-{14,3},
-{13,7},
-{12,1},
-{13,5},
-{20,13},
-{26,3},
-{21,14},
-{19,9},
-{25,15},
-{17,4},
-{26,9},
-{23,7},
-{20,12},
-{21,7},
-{16,11},
-{15,15},
-{13,17},
-{13,18},
-{6,21},
-{5,17},
-{18,19},
-{21,19},
-{24,21},
-{25,22},
-{27,17},
-{19,17},
+const uint8_t COINS_LENGTH  = 36;
+const uint8_t GHOSTS_LENGTH = 13;
+const uint8_t PLAYER_LENGTH = 9;
+uint16_t coins[36][2] = {
+{9*BLOCK_SIZE,3*BLOCK_SIZE},
+{8*BLOCK_SIZE,3*BLOCK_SIZE},
+{9*BLOCK_SIZE,4*BLOCK_SIZE},
+{9*BLOCK_SIZE,5*BLOCK_SIZE},
+{8*BLOCK_SIZE,4*BLOCK_SIZE},
+{8*BLOCK_SIZE,5*BLOCK_SIZE},
+{8*BLOCK_SIZE,14*BLOCK_SIZE},
+{3*BLOCK_SIZE,15*BLOCK_SIZE},
+{10*BLOCK_SIZE,13*BLOCK_SIZE},
+{9*BLOCK_SIZE,15*BLOCK_SIZE},
+{14*BLOCK_SIZE,7*BLOCK_SIZE},
+{14*BLOCK_SIZE,15*BLOCK_SIZE},
+{18*BLOCK_SIZE,13*BLOCK_SIZE},
+{21*BLOCK_SIZE,9*BLOCK_SIZE},
+{23*BLOCK_SIZE,8*BLOCK_SIZE},
+{22*BLOCK_SIZE,8*BLOCK_SIZE},
+{24*BLOCK_SIZE,4*BLOCK_SIZE},
+{19*BLOCK_SIZE,13*BLOCK_SIZE},
+{16*BLOCK_SIZE,7*BLOCK_SIZE},
+{23*BLOCK_SIZE,5*BLOCK_SIZE},
+{20*BLOCK_SIZE,6*BLOCK_SIZE},
+{11*BLOCK_SIZE,4*BLOCK_SIZE},
+{20*BLOCK_SIZE,3*BLOCK_SIZE},
+{18*BLOCK_SIZE,4*BLOCK_SIZE},
+{15*BLOCK_SIZE,4*BLOCK_SIZE},
+{28*BLOCK_SIZE,3*BLOCK_SIZE},
+{26*BLOCK_SIZE,18*BLOCK_SIZE},
+{24*BLOCK_SIZE,18*BLOCK_SIZE},
+{26*BLOCK_SIZE,20*BLOCK_SIZE},
+{14*BLOCK_SIZE,18*BLOCK_SIZE},
+{15*BLOCK_SIZE,18*BLOCK_SIZE},
+{18*BLOCK_SIZE,19*BLOCK_SIZE},
+{20*BLOCK_SIZE,19*BLOCK_SIZE},
+{8*BLOCK_SIZE,20*BLOCK_SIZE},
+{6*BLOCK_SIZE,18*BLOCK_SIZE},
+{9*BLOCK_SIZE,18*BLOCK_SIZE},
 };
-uint16_t players[12][2] = {
-{27,22},
-{27,21},
-{28,21},
-{29,21},
-{29,22},
-{28,22},
-{28,20},
-{29,20},
-{29,19},
-{27,19},
-{27,20},
-{28,19},
+uint16_t players[9][2] = {
+{29*BLOCK_SIZE,21*BLOCK_SIZE},
+{29*BLOCK_SIZE,22*BLOCK_SIZE},
+{29*BLOCK_SIZE,20*BLOCK_SIZE},
+{30*BLOCK_SIZE,20*BLOCK_SIZE},
+{30*BLOCK_SIZE,21*BLOCK_SIZE},
+{30*BLOCK_SIZE,22*BLOCK_SIZE},
+{28*BLOCK_SIZE,22*BLOCK_SIZE},
+{28*BLOCK_SIZE,21*BLOCK_SIZE},
+{28*BLOCK_SIZE,20*BLOCK_SIZE},
 };
-uint16_t ghosts[10][2] = {
-{5,11},
-{3,11},
-{4,13},
-{6,13},
-{8,12},
-{7,11},
-{2,13},
-{2,10},
-{4,9},
-{6,9},
+uint16_t ghosts[13][2] = {
+{3*BLOCK_SIZE,5*BLOCK_SIZE},
+{5*BLOCK_SIZE,4*BLOCK_SIZE},
+{2*BLOCK_SIZE,3*BLOCK_SIZE},
+{1*BLOCK_SIZE,6*BLOCK_SIZE},
+{2*BLOCK_SIZE,4*BLOCK_SIZE},
+{2*BLOCK_SIZE,5*BLOCK_SIZE},
+{3*BLOCK_SIZE,9*BLOCK_SIZE},
+{1*BLOCK_SIZE,9*BLOCK_SIZE},
+{3*BLOCK_SIZE,11*BLOCK_SIZE},
+{2*BLOCK_SIZE,11*BLOCK_SIZE},
+{6*BLOCK_SIZE,10*BLOCK_SIZE},
+{8*BLOCK_SIZE,9*BLOCK_SIZE},
+{5*BLOCK_SIZE,8*BLOCK_SIZE},
 };
 uint8_t field[FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION] = {
 {0xFF,0xFF,0xFF,0xFF,},
 {0x80,0x00,0x00,0x01,},
-{0x80,0x00,0xE4,0x01,},
-{0xF0,0x01,0x84,0x01,},
-{0xE0,0x71,0x04,0x01,},
-{0xE0,0x51,0x8C,0xC1,},
-{0xE0,0x10,0xFC,0x63,},
-{0xEE,0x10,0xC0,0x43,},
-{0xE0,0x10,0x00,0x43,},
-{0xE1,0x10,0x00,0x03,},
-{0xC1,0x90,0x01,0xC3,},
-{0xC0,0x10,0x01,0xF9,},
-{0xC0,0x13,0x81,0xF9,},
-{0xC0,0x14,0x41,0xF9,},
-{0xFF,0xF0,0x79,0xC1,},
-{0x80,0x00,0x00,0x01,},
-{0x80,0x80,0x00,0x01,},
-{0x80,0x80,0x81,0x81,},
-{0x80,0x80,0x81,0xC1,},
-{0x80,0x80,0x83,0xE3,},
-{0x80,0x00,0x03,0xE3,},
-{0x80,0x18,0x03,0x03,},
-{0x80,0x00,0x00,0x03,},
+{0xFF,0xE3,0xFF,0xF1,},
+{0x80,0x22,0x04,0x01,},
+{0x80,0x22,0x04,0x41,},
+{0x80,0x20,0x04,0x41,},
+{0x84,0x60,0xC4,0xC1,},
+{0x87,0x80,0x07,0x9F,},
+{0x80,0x00,0x00,0x1D,},
+{0x80,0x00,0x00,0x17,},
+{0xB4,0x80,0x00,0x1E,},
+{0x84,0x80,0x00,0x1B,},
+{0x85,0x83,0x80,0x1F,},
+{0x84,0x0F,0x80,0x01,},
+{0x84,0x18,0xFC,0x01,},
+{0x80,0x10,0x00,0x01,},
+{0x80,0x10,0x00,0x01,},
+{0xC7,0x80,0x01,0xF1,},
+{0xE0,0x80,0xE1,0x11,},
+{0xF0,0xC7,0x81,0x01,},
+{0xF8,0x00,0x01,0x01,},
+{0xFC,0x00,0x00,0x01,},
+{0xFC,0x00,0x00,0x01,},
 {0xFF,0xFF,0xFF,0xFF,},
 };
-
-
 
 // volatile direction cd = EAST;
 
@@ -256,7 +245,15 @@ void drawField(uint8_t field[FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION])
 
 void drawCoins(){
   for(int i=0;i<COINS_LENGTH;i++){
-    tft.fillRoundRect(coins[i][0]*BLOCK_SIZE, coins[i][1]*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE,100, COIN_COLOR);
+    tft.fillRoundRect(coins[i][0], coins[i][1], BLOCK_SIZE, BLOCK_SIZE,100, COIN_COLOR);
+  }
+}
+
+void collectCoins(){
+  
+
+  for(int i =0;i<COINS_LENGTH;i++){
+
   }
 }
 // void moveGhost(){
@@ -267,7 +264,7 @@ void drawCoins(){
 
 void drawGhosts(){
   for(int i=0;i<GHOSTS_LENGTH;i++){
-    tft.fillRoundRect(coins[i][0]*BLOCK_SIZE, coins[i][1]*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE,5, GHOST_COLOR);
+    tft.fillRoundRect(coins[i][0], coins[i][1], BLOCK_SIZE, BLOCK_SIZE,5, GHOST_COLOR);
   }
 }
 // void setSurrounding(uint8_t x, uint8_t y)
@@ -465,12 +462,14 @@ ISR(INT0_vect)
       end = 1;
       bufferdata = buffer >> 4;
     }
+
     if (pulseDuration > 260 && pulseDuration < 280) // 552 // 565
     {
       end = 0;
       buffer = 0;
       bufferIndex = 0;
     }
+
     if(pulseDuration > 160 && pulseDuration < 190) {
       // Voeg '1' toe aan buffer
       eenofnull = 1; 
@@ -597,7 +596,7 @@ bool setupNunchuck(){
 
 void drawPacmen(uint16_t x,uint16_t y){
   uint16_t color  = PLAYER_COLOR;
-  uint8_t r = (BLOCK_SIZE/2)-1;
+  uint8_t r = (BLOCK_SIZE/2)-1;//radius of pacman
   uint8_t maxBite = BLOCK_SIZE*0.4;//height of pacmen bite
   uint8_t bite = maxBite;
   // tft.fillRect(x,y,BLOCK_SIZE,BLOCK_SIZE,PLAYER_COLOR);
@@ -608,16 +607,10 @@ void drawPacmen(uint16_t x,uint16_t y){
 
 
 void drawPlayer(uint8_t playerIndex , uint16_t x, uint16_t y){
-
-    // tft.fillRect(playerX*BLOCK_SIZE, playerY*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE, PLAYER_COLOR);
-    // tft.fillRect(x,y,BLOCK_SIZE,BLOCK_SIZE,PLAYER_COLOR);
     drawPacmen(x,y);
 
     players[playerIndex][_x_] = x;
     players[playerIndex][_y_] = y;
-
-    // playerPosX = x;
-    // playerPosY = y;
 }
 
 void drawPath(uint16_t x, uint16_t y){
@@ -625,10 +618,10 @@ void drawPath(uint16_t x, uint16_t y){
 }
 
 void movePlayer(uint8_t playerIndex,uint16_t newX,uint16_t newY){
-
     drawPath(players[playerIndex][_x_],players[playerIndex][_y_]);
     drawPlayer(playerIndex,newX,newY);
 }
+
 uint16_t* xyToVector(uint16_t x0,uint16_t y0,uint16_t x1,uint16_t y1){
   uint16_t* vector = new uint16_t[2];
   
@@ -741,7 +734,7 @@ void movePlayerNunchuk(uint8_t playerIndex){
     uint16_t newX = players[playerIndex][_x_];
     uint16_t newY = players[playerIndex][_y_];
     
-    if (nunchuckData & (1 << 3)) // 1000 <--
+      if (nunchuckData & (1 << 3)) // 1000 <--
       {
         newX += playerSpeed;
         // newY
@@ -778,8 +771,11 @@ void drawLevel(){
   drawField(&field[0]);
   drawCoins();
   drawGhosts();
-  drawPlayer(0,players[0][_x_]*BLOCK_SIZE,players[0][_y_]*BLOCK_SIZE);
-  drawPlayer(1,players[1][_x_]*BLOCK_SIZE,players[1][_y_]*BLOCK_SIZE);
+  for(int i =0;i<numPlayers;i++){
+    drawPlayer(i,players[i][_x_],players[i][_y_]);
+  }
+  // drawPlayer(0,players[0][_x_]*BLOCK_SIZE,players[0][_y_]*BLOCK_SIZE);
+  // drawPlayer(1,players[1][_x_]*BLOCK_SIZE,players[1][_y_]*BLOCK_SIZE);
 }
 
 
@@ -789,9 +785,6 @@ void getNunchukPosition(){
         return;
     } 
     
-    // uint8_t x = Nunchuk.state.joy_x_axis;
-    // uint8_t y = Nunchuk.state.joy_y_axis;
-    //flipped
     uint8_t x = Nunchuk.state.joy_x_axis;
     uint8_t y = -Nunchuk.state.joy_y_axis;
     
@@ -889,7 +882,6 @@ void moveOverIR(uint8_t playerIndex)
       if (bufferdata & (1 << 3)) // 1000 <--
       {
         newX += playerSpeed;
-        // newY
       }
       else if (bufferdata & (1 << 2)) // 0100 -->
       {
@@ -909,6 +901,7 @@ void moveOverIR(uint8_t playerIndex)
     delete coordPtr;
     
 }
+
 int main(void)
 {
     sei();

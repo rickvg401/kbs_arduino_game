@@ -50,22 +50,22 @@ def exportGrid():
 	with open(ofname, 'w') as f:
 		f.write("const uint8_t COINS_LENGTH  = "+str(len(coins))+";\n")
 		f.write("const uint8_t GHOSTS_LENGTH = "+str(len(ghosts))+";\n")
-		f.write("const uint8_t PLAYER_LENGTH = "+str(len(playerCheck))+";\n")
+		f.write("const uint8_t PLAYER_LENGTH = "+str(len(players))+";\n")
 
-		f.write("uint8_t coins["+str(len(coins))+"][2] = {\n")
+		f.write("uint16_t coins["+str(len(coins))+"][2] = {\n")
 		for coin in coins:
-			f.write("{"+str(coin[0])+","+str(coin[1])+"},\n")
+			f.write("{"+str(coin[0])+"*BLOCK_SIZE,"+str(coin[1])+"*BLOCK_SIZE},\n")
 		f.write("};\n")
 
-		f.write("uint8_t players["+str(len(players))+"][2] = {\n")
+		f.write("uint16_t players["+str(len(players))+"][2] = {\n")
 		for player in players:
-			f.write("{"+str(player[0])+","+str(player[1])+"},\n")
+			f.write("{"+str(player[0])+"*BLOCK_SIZE,"+str(player[1])+"*BLOCK_SIZE},\n")
 
 		f.write("};\n")
 
-		f.write("uint8_t ghosts["+str(len(ghosts))+"][2] = {\n")
+		f.write("uint16_t ghosts["+str(len(ghosts))+"][2] = {\n")
 		for ghost in ghosts:
-			f.write("{"+str(ghost[0])+","+str(ghost[1])+"},\n")
+			f.write("{"+str(ghost[0])+"*BLOCK_SIZE,"+str(ghost[1])+"*BLOCK_SIZE},\n")
 
 		f.write("};\n")
 
