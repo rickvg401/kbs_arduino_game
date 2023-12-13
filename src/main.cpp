@@ -19,6 +19,8 @@
 
 //general
 #define F_CPU 16000000ul
+#define _x_ 0
+#define _y_ 1
 
 //serial
 #define SerialActive //if defined serial is active
@@ -79,11 +81,12 @@ namespace notes
     
 
 // infrared vars
-volatile uint16_t prevCounterValue = 0;
-volatile uint16_t currentCounterValue = 0;
-volatile uint16_t pulseDuration = 0;
+volatile int16_t prevCounterValue = 0;
+volatile int16_t currentCounterValue = 0;
+volatile int16_t pulseDuration = 0;
 volatile uint8_t eenofnull = 2;
 volatile uint16_t counter = 0;
+volatile uint16_t counter69 = 0;
 
 
 // ir 
@@ -489,7 +492,7 @@ void sendNEC(uint8_t data) {
       {
         // Verzend een logische '1'
         // begin counter van 0 en tot die tijd zet infrared aan 
-        counter = 0;
+        counter69 = 0;
         logicalone = true;
         TCCR0A |= (1<< COM0A0); // toggle pin met 38Khz
       }
@@ -497,7 +500,7 @@ void sendNEC(uint8_t data) {
       {
         // Verzend een logische '0'
         // begin counter van 0 en tot die tijd zet infrared aan
-        counter = 0;
+        counter69 = 0;
         logicalzero = true;
         TCCR0A |= (1<<COM0A0); // toggle de pin met 38KHZ
       }
@@ -509,7 +512,7 @@ void sendNEC(uint8_t data) {
 
 void sendEnd()
 {
-    counter = 0;
+    counter69 = 0;
     logicalend = true;
     TCCR0A |= (1<<COM0A0); // toggle de pin met 38KHZ
     while(logicalone || logicalzero || logicalend || logicalbegin)
@@ -519,7 +522,7 @@ void sendEnd()
 
 void sendBegin()
 {
-    counter = 0;
+    counter69 = 0;
     logicalbegin = true;
     TCCR0A |= (1<<COM0A0); // toggle de pin met 38KHZ
     while(logicalone || logicalzero || logicalend || logicalbegin)
@@ -534,30 +537,37 @@ ISR(INT0_vect)
  if(pinstatus)
  {
 
-    // opgaande flank bepaal je het verschil tussen huidige counterstand en de onthouden counterstand
+    // opgaande flank bepaal je het verschil tussen huidige       	//counterstand en de onthouden counterstand
     // Je hebt dan gemeten hoe lang de puls duurde. Daarmee kan je
     // bepalen of het uitgezonden bit een 0 of een 1 was. Schuif dit
     // bit in het resulterende buffer.
      currentCounterValue = counter;
-     pulseDuration = currentCounterValue - prevCounterValue;
+     pulseDuration = abs(currentCounterValue - prevCounterValue);
+
+     if(bufferIndex == 4)
+     {
+      bufferIndex = 0;
+     }
     if (pulseDuration > 290 && pulseDuration < 320)
     {
-      end = true;
-      bufferdata = buffer >> 4;
+      end = 1;
+      bufferdata = buffer ;
+      
     }
     if (pulseDuration > 260 && pulseDuration < 280) // 552 // 565
     {
-      end = false;
+      end = 0;
       buffer = 0;
       bufferIndex = 0;
+      
     }
-    if(pulseDuration > 160 && pulseDuration < 190) {
+    if(pulseDuration > 160 && pulseDuration < 190 ) {
       // Voeg '1' toe aan buffer
       eenofnull = 1; 
       buffer |= (1 << bufferIndex); // Zet het bit op 1 
       bufferIndex++;
 
-    } else if (pulseDuration < 95 && pulseDuration > 65) {
+    } else if (pulseDuration < 95 && pulseDuration > 65 ) {
       // Voeg '0' toe aan buffer
       eenofnull = 0;
       buffer &= ~(1 << bufferIndex); // Zet het bit op 0
@@ -576,10 +586,10 @@ ISR(TIMER0_COMPA_vect)
 {
   // counter hier altijd ophogen 
   counter++;
-
+  counter69++;
   if (logicalone == true)
   {
-    currentcounterone = counter;
+    currentcounterone = counter69;
     if(currentcounterone > 200)
     {
       logicalone = false;
@@ -592,7 +602,7 @@ ISR(TIMER0_COMPA_vect)
 
   if (logicalzero == true)
   {
-    currentcounterzero = counter;
+    currentcounterzero = counter69;
     if(currentcounterzero > 100)
     {
       logicalzero = false;
@@ -605,12 +615,12 @@ ISR(TIMER0_COMPA_vect)
   //begin 555
   if(logicalbegin == true)
   {
-    currentcounterbegin = counter;
-    if(currentcounterbegin > 750)
+    currentcounterbegin = counter69;
+    if(currentcounterbegin > 750) // 750
     {
       logicalbegin = false;
     }
-    if((currentcounterbegin) >= (268)) 
+    if((currentcounterbegin) >= (268))  // 268
     {
       TCCR0A &= ~(1 << COM0A0);
     }
@@ -619,17 +629,18 @@ ISR(TIMER0_COMPA_vect)
   //end 310
   if(logicalend == true)
   {
-    currentcounterend = counter;
-    if(currentcounterend > 500) // 325
+    currentcounterend = counter69;
+    if(currentcounterend > 5000) // 325
     {
       logicalend = false;
     }
-    if((currentcounterend) >= (310))
+    if((currentcounterend) >= (310)) //
     {
       TCCR0A &= ~(1 << COM0A0);
     }
   }
 }
+
 
 void initIR()
 {
@@ -812,16 +823,34 @@ uint16_t* vectorToXY(uint16_t xb,uint16_t yb,uint16_t* vector){
   return xy ;
 }
 
-void movePlayerNunchuk(){
+void movePlayerNunchuk(uint8_t playerIndex){
     
+    uint16_t newX = players[playerIndex][_x_];
+    uint16_t newY = players[playerIndex][_y_];
     
+    if (nunchuckData & (1 << 3)) // 1000 <--
+      {
+        newX += playerSpeed;
+        // newY
+      }
+      else if (nunchuckData & (1 << 2)) // 0100 -->
+      {
+       newX-=playerSpeed;
+      }
+      else if (nunchuckData & (1 << 1)) // 0010 v
+      {
+        newY+=playerSpeed;
+      }
+      else if (nunchuckData == 1 ) // 0001 ^
+      {
+        newY-=playerSpeed;
+      }
+
+
     
-    uint16_t newX = playerPosX + ((NunChuckPosition[0]-128)/100*1);
-    uint16_t newY = playerPosY + ((NunChuckPosition[1]-128)/100*1);
-    
-    uint16_t* coordPtr = walkTo(playerPosX,playerPosY,newX,newY);
+    uint16_t* coordPtr = walkTo(players[playerIndex][_x_],players[playerIndex][_y_],newX,newY);
     // playerVector = xyToVector(playerPosX,playerPosY,coordPtr[0],coordPtr[1]);
-    movePlayer(coordPtr[0],coordPtr[1]);
+    movePlayer(playerIndex,coordPtr[0],coordPtr[1]);
     delete coordPtr;
     
     
@@ -892,20 +921,23 @@ void PCF8574_write(byte bytebuffer)
   Wire.endTransmission();
 }
 
+#define MASK 0b0000
 uint8_t nunchuckWrap(){
-  uint8_t nunchuckData = 0b0000;
-  if(NunChuckPosition[0] > 128){
-      nunchuckData = (1<<3) | nunchuckData;
-  } else if( NunChuckPosition[0] < 128 ){
-      nunchuckData = (1<<2) | nunchuckData;
-  } 
+
+  nunchuckData = 0b0000;
+
   if(NunChuckPosition[1] > 128){
-      nunchuckData = (1<<1) | nunchuckData;
+      nunchuckData = (1<<1) | MASK;
   } else if( NunChuckPosition[1] < 128 ){
-      nunchuckData = (1<<0) | nunchuckData;
+      nunchuckData = (1<<0) | MASK;
+  } 
+  if(NunChuckPosition[0] > 128){
+      nunchuckData = (1<<3) | MASK;
+  } else if( NunChuckPosition[0] < 128 ){
+      nunchuckData = (1<<2) | MASK;
   } 
   return nunchuckData;
-  }
+}
 
 void sendByte(uint8_t byte, bool address)
 {
@@ -913,7 +945,7 @@ void sendByte(uint8_t byte, bool address)
     for (uint8_t bit = 0; bit < 8; bit++)
     {
       sendNEC((byte >> bit) & 1);
-      
+      // Serial.println(pulseDuration);
     }
   }
   if(address)
@@ -927,25 +959,22 @@ void sendByte(uint8_t byte, bool address)
   
 }
 
+
 void sendCommand(uint8_t address, uint8_t command)
 {
   sendBegin();
   sendByte(address,true);
-  sendByte(command,false);
+  // sendByte(command,false);
   sendEnd();
 }
 
 
-void moveOverIR()
+void moveOverIR(uint8_t playerIndex)
 {
   
-    uint16_t newX = playerPosX;
-    uint16_t newY = playerPosY;
+    uint16_t newX = players[playerIndex][_x_];
+    uint16_t newY = players[playerIndex][_y_];
 
-      // if(buffer == 0b1011){
-      //   newX = playerPosX;
-      //   newY = playerPosY;
-      // }
 
       if (bufferdata & (1 << 3)) // 1000 <--
       {
@@ -963,13 +992,14 @@ void moveOverIR()
       else if (bufferdata == 1 ) // 0001 ^
       {
         newY-=playerSpeed;
-        Serial.println("bover");
       }
 
-    uint16_t* coordPtr = walkTo(playerPosX,playerPosY,newX,newY);
-    movePlayer(coordPtr[0],coordPtr[1]);
+    uint16_t* coordPtr = walkTo(players[playerIndex][_x_],players[playerIndex][_y_],newX,newY);
+    movePlayer(playerIndex,coordPtr[0],coordPtr[1]);
     delete coordPtr;
+    
 }
+
 void printHighScore(char names[10][6],uint32_t scores[10]);
 void sort(char names[10][6],uint32_t scores[10], int pos[10]);
 void addScore(char name[6], uint32_t points);
@@ -1103,20 +1133,10 @@ int main(void)
     // Serial.print()
     while(1)
     {
-        // uint8_t data = 0b00001101;
-        // sendNEC(data); // Voorbeeld: Verstuur een testsignaal met waarde 0x00FF  
-        // sendnec in een for loop 8 keer aanroepen !!!!
-      // nunchuck en display
         getNunchukPosition();
-        sendCommand(0b1011, nunchuckWrap());
-        // Serial.print("buffer result-> ");
-        // Serial.println(buffer);
- 
-        // moveOverIR();
-        // movePlayerNunchuk();
-        // delay(100);
-
-        
+        sendCommand(nunchuckWrap(), nunchuckWrap());
+        moveOverIR(1);
+        movePlayerNunchuk(playablePlayer);  
     } 
     return 0;
 }
