@@ -6,7 +6,7 @@
 #include "display/Adafruit-GFX/Adafruit_GFX.h"
 #include "display/Adafruit_ILI9341.h"
 #include <EEPROM.h>
-#include <Fonts/PressStart2P_vaV76pt7b.h>
+#include "display/fonts/PressStart2P_vaV76pt7b.h"
 #include <util/delay.h>
 #include <sound.h>
 #include <notes.h>
@@ -1065,6 +1065,11 @@ int main(void)
       }
     }
 
+
+    HighScorePage();
+    _delay_ms(2000);
+
+
     drawLevel();
 
     // Serial.print()
@@ -1075,8 +1080,10 @@ int main(void)
         moveOverIR(1);
         movePlayerNunchuk(playablePlayer);  
         collision();
-        if(endGame()){Serial.println("game ended");return 0;}
+        if(endGame()){Serial.println("game ended");break;}
     } 
+
+    HighScorePage();
     return 0;
 }
 
