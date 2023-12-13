@@ -6,9 +6,10 @@ import pygame
 
 ofname = "grid.txt"
 
-GRID_WIDTH = 32
-GRID_HEIGHT = 24
+GRID_WIDTH = 16
+GRID_HEIGHT = 16
 BLOCKSIZE = 30
+grid_div = 8
 
 win = pygame.display.set_mode((GRID_WIDTH* BLOCKSIZE, GRID_HEIGHT* BLOCKSIZE))
 clock = pygame.time.Clock()
@@ -50,32 +51,46 @@ def exportGrid():
 	with open(ofname, 'w') as f:
 		f.write("const uint8_t COINS_LENGTH  = "+str(len(coins))+";\n")
 		f.write("const uint8_t GHOSTS_LENGTH = "+str(len(ghosts))+";\n")
-		f.write("const uint8_t PLAYER_LENGTH = "+str(len(playerCheck))+";\n")
+		f.write("const uint8_t PLAYER_LENGTH = "+str(len(players))+";\n")
 
-		f.write("uint8_t coins["+str(len(coins))+"][2] = {\n")
+		f.write("uint16_t coins["+str(len(coins))+"][2] = {\n")
 		for coin in coins:
-			f.write("{"+str(coin[0])+","+str(coin[1])+"},\n")
+			f.write("{"+str(coin[0])+"*BLOCK_SIZE,"+str(coin[1])+"*BLOCK_SIZE},\n")
 		f.write("};\n")
 
-		f.write("uint8_t players["+str(len(players))+"][2] = {\n")
+		f.write("bool coinsCatched["+str(len(coins))+"] = {")
+		for coin in coins:
+			f.write("false,")
+		f.write("};\n")
+
+		f.write("uint16_t players["+str(len(players))+"][2] = {\n")
 		for player in players:
-			f.write("{"+str(player[0])+","+str(player[1])+"},\n")
+			f.write("{"+str(player[0])+"*BLOCK_SIZE,"+str(player[1])+"*BLOCK_SIZE},\n")
 
 		f.write("};\n")
 
-		f.write("uint8_t ghosts["+str(len(ghosts))+"][2] = {\n")
-		for ghost in ghosts:
-			f.write("{"+str(ghost[0])+","+str(ghost[1])+"},\n")
+		f.write("uint16_t playerResult["+str(len(players))+"] = {")
+		for player in players:
+			f.write("0,")
+		f.write("};\n")
 
+		f.write("uint16_t ghosts["+str(len(ghosts))+"][2] = {\n")
+		for ghost in ghosts:
+			f.write("{"+str(ghost[0])+"*BLOCK_SIZE,"+str(ghost[1])+"*BLOCK_SIZE},\n")
+		f.write("};\n")
+
+		f.write("bool ghostsCatched["+str(len(ghosts))+"] = {")
+		for ghost in ghosts:
+			f.write("false,")
 		f.write("};\n")
 
 		
 		f.write("uint8_t field[FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION] = {\n")
 		# export grid
 		for y, row in enumerate(grid):
-			f.write("{")
-			for col in range(GRID_WIDTH//8):
-				byteGroup = [str(grid[y][x]) for x in range(col*8, col*8+8)]
+			f.write("{") 
+			for col in range(GRID_WIDTH//grid_div):
+				byteGroup = [str(grid[y][x]) for x in range(col*grid_div, col*grid_div+grid_div)]
 				_hex = "0x%0.2X" % int(''.join(byteGroup), 2)
 				f.write(f"{_hex},")
 			f.write("},\n")
@@ -133,10 +148,10 @@ if __name__ == "__main__":
 			# x, y = pygame.mouse.get_pos()
 			if keys[0]:
 				grid[y//BLOCKSIZE][x//BLOCKSIZE] = 1
-				print(grid)
+				# print(grid)
 			elif keys[2]:
 				grid[y//BLOCKSIZE][x//BLOCKSIZE] = 0
-				print(grid)
+				# print(grid)
 
 			
 			
