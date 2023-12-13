@@ -5,13 +5,14 @@
 #include "SPI.h"
 #include "display/Adafruit-GFX/Adafruit_GFX.h"
 #include "display/Adafruit_ILI9341.h"
+#include <EEPROM.h>
+#include <Fonts/PressStart2P_vaV76pt7b.h>
 #include <util/delay.h>
+#include <sound.h>
+#include <notes.h>
 
-// #include "SPI.h"
-// #include "Adafruit_GFX.h"
-// #include "Adafruit_ILI9341.h"
-// #include <avr/interrupt.h>
-// #include <Nunchuk.h>
+
+
 
 //general
 #define F_CPU 16000000ul
@@ -35,12 +36,19 @@ bool NunChuckPositionDivided = false;
 /*display*/
 #define TFT_DC 9
 #define TFT_CS 10
+#define HIGHSCORECOLOR ILI9341_YELLOW //color of highscore text
+#define PLAYERNAME "Jurre" //player name for adding highscores
+char nameList [10][6] = {}; //list to store playernames from EEPROM
+uint32_t scoreList [10] = {};//list to store scores from EEPROM
+int posList[10] = {0,1,2,3,4,5,6,7,8,9}; //list to keep track of indexes in EEPROM
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
+//game
 //game
 const int GAMECLOCK = 15; //ball updates every x times per second
 // uint16_t playerPosX;
 // uint16_t playerPosY;
+
 const uint8_t numPlayers = 2;
 uint8_t playablePlayer = 0;
 // uint16_t* playerVector = NULL;
@@ -65,14 +73,22 @@ const uint8_t playerSpeed = 1*BLOCK_SIZE;
 void PCF8574_write(byte bytebuffer);
 byte PCF8574_read();
 byte bits;
-
+    
+struct music pacmanTheme;
+namespace notes
+{
+  uint16_t pacmanNotes[] = {_C4, _C5, _G4, _E4, _C5, _G4, _C4S, _C5S, _G4S, _F4, _G4S, _F4, _C4, _C4, _C5, _G4, _E4, _C5, _G4, _E4, _D4, _D4S,_E4, _E4, _F4, _F4S, _F4, _F4S, _G4, _C5}; 
+  uint16_t pacmanDurations[sizeof(pacmanNotes) / sizeof(uint16_t)] = {300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100};
+}
+    
 
 // infrared vars
-volatile uint16_t prevCounterValue = 0;
-volatile uint16_t currentCounterValue = 0;
-volatile uint16_t pulseDuration = 0;
+volatile int16_t prevCounterValue = 0;
+volatile int16_t currentCounterValue = 0;
+volatile int16_t pulseDuration = 0;
 volatile uint8_t eenofnull = 2;
 volatile uint16_t counter = 0;
+volatile uint16_t counter69 = 0;
 
 
 // ir 
@@ -82,7 +98,6 @@ volatile bool logicalend = false;
 volatile bool logicalbegin = false;
 
 volatile bool end = true;
-
 
 volatile uint16_t currentcounterone = 0;
 volatile uint16_t currentcounterzero = 0;
@@ -116,10 +131,16 @@ void drawPlayer(uint16_t color);
 void drawCoins();
 void drawGhosts();
 bool canWalk(uint8_t, uint8_t);
-// void setSurrounding(uint8_t, uint8_t);
 
+//void setSurrounding(uint8_t, uint8_t);
 
-
+void HighScorePage();
+bool setupHighScore();
+void getScore();
+void setupScore();
+void printHighScore(char names[10][6],uint32_t scores[10]);
+void sort(char names[10][6],uint32_t scores[10], int pos[10]);
+void addScore(char name[6], uint32_t points);
 
 
 //game level
@@ -134,6 +155,7 @@ uint16_t coins[7][2] = {
 {6*BLOCK_SIZE,1*BLOCK_SIZE},
 {11*BLOCK_SIZE,1*BLOCK_SIZE},
 {1*BLOCK_SIZE,10*BLOCK_SIZE},
+
 };
 bool coinsCatched[7] = {false,false,false,false,false,false,false,};
 uint16_t players[6][2] = {
@@ -404,7 +426,7 @@ void sendNEC(uint8_t data) {
       {
         // Verzend een logische '1'
         // begin counter van 0 en tot die tijd zet infrared aan 
-        counter = 0;
+        counter69 = 0;
         logicalone = true;
         TCCR0A |= (1<< COM0A0); // toggle pin met 38Khz
       }
@@ -412,7 +434,7 @@ void sendNEC(uint8_t data) {
       {
         // Verzend een logische '0'
         // begin counter van 0 en tot die tijd zet infrared aan
-        counter = 0;
+        counter69 = 0;
         logicalzero = true;
         TCCR0A |= (1<<COM0A0); // toggle de pin met 38KHZ
       }
@@ -424,7 +446,7 @@ void sendNEC(uint8_t data) {
 
 void sendEnd()
 {
-    counter = 0;
+    counter69 = 0;
     logicalend = true;
     TCCR0A |= (1<<COM0A0); // toggle de pin met 38KHZ
     while(logicalone || logicalzero || logicalend || logicalbegin)
@@ -434,7 +456,7 @@ void sendEnd()
 
 void sendBegin()
 {
-    counter = 0;
+    counter69 = 0;
     logicalbegin = true;
     TCCR0A |= (1<<COM0A0); // toggle de pin met 38KHZ
     while(logicalone || logicalzero || logicalend || logicalbegin)
@@ -449,16 +471,22 @@ ISR(INT0_vect)
  if(pinstatus)
  {
 
-    // opgaande flank bepaal je het verschil tussen huidige counterstand en de onthouden counterstand
+    // opgaande flank bepaal je het verschil tussen huidige       	//counterstand en de onthouden counterstand
     // Je hebt dan gemeten hoe lang de puls duurde. Daarmee kan je
     // bepalen of het uitgezonden bit een 0 of een 1 was. Schuif dit
     // bit in het resulterende buffer.
      currentCounterValue = counter;
-     pulseDuration = currentCounterValue - prevCounterValue;
+     pulseDuration = abs(currentCounterValue - prevCounterValue);
+
+     if(bufferIndex == 4)
+     {
+      bufferIndex = 0;
+     }
     if (pulseDuration > 290 && pulseDuration < 320)
     {
       end = 1;
-      bufferdata = buffer >> 4;
+      bufferdata = buffer ;
+      
     }
 
     if (pulseDuration > 260 && pulseDuration < 280) // 552 // 565
@@ -466,15 +494,17 @@ ISR(INT0_vect)
       end = 0;
       buffer = 0;
       bufferIndex = 0;
+      
     }
 
     if(pulseDuration > 160 && pulseDuration < 190) {
+
       // Voeg '1' toe aan buffer
       eenofnull = 1; 
       buffer |= (1 << bufferIndex); // Zet het bit op 1 
       bufferIndex++;
 
-    } else if (pulseDuration < 95 && pulseDuration > 65) {
+    } else if (pulseDuration < 95 && pulseDuration > 65 ) {
       // Voeg '0' toe aan buffer
       eenofnull = 0;
       buffer &= ~(1 << bufferIndex); // Zet het bit op 0
@@ -493,10 +523,10 @@ ISR(TIMER0_COMPA_vect)
 {
   // counter hier altijd ophogen 
   counter++;
-
+  counter69++;
   if (logicalone == true)
   {
-    currentcounterone = counter;
+    currentcounterone = counter69;
     if(currentcounterone > 200)
     {
       logicalone = false;
@@ -509,7 +539,7 @@ ISR(TIMER0_COMPA_vect)
 
   if (logicalzero == true)
   {
-    currentcounterzero = counter;
+    currentcounterzero = counter69;
     if(currentcounterzero > 100)
     {
       logicalzero = false;
@@ -522,12 +552,12 @@ ISR(TIMER0_COMPA_vect)
   //begin 555
   if(logicalbegin == true)
   {
-    currentcounterbegin = counter;
-    if(currentcounterbegin > 750)
+    currentcounterbegin = counter69;
+    if(currentcounterbegin > 750) // 750
     {
       logicalbegin = false;
     }
-    if((currentcounterbegin) >= (268)) 
+    if((currentcounterbegin) >= (268))  // 268
     {
       TCCR0A &= ~(1 << COM0A0);
     }
@@ -536,17 +566,18 @@ ISR(TIMER0_COMPA_vect)
   //end 310
   if(logicalend == true)
   {
-    currentcounterend = counter;
+    currentcounterend = counter69;
     if(currentcounterend > 5000) // 325
     {
       logicalend = false;
     }
-    if((currentcounterend) >= (310))
+    if((currentcounterend) >= (310)) //
     {
       TCCR0A &= ~(1 << COM0A0);
     }
   }
 }
+
 
 void initIR()
 {
@@ -728,6 +759,7 @@ uint16_t* vectorToXY(uint16_t xb,uint16_t yb,uint16_t* vector){
 }
 
 void movePlayerNunchuk(uint8_t playerIndex){
+
     
     uint16_t newX = players[playerIndex][_x_];
     uint16_t newY = players[playerIndex][_y_];
@@ -735,7 +767,6 @@ void movePlayerNunchuk(uint8_t playerIndex){
       if (nunchuckData & (1 << 3)) // 1000 <--
       {
         newX += playerSpeed;
-        // newY
       }
       else if (nunchuckData & (1 << 2)) // 0100 -->
       {
@@ -750,10 +781,7 @@ void movePlayerNunchuk(uint8_t playerIndex){
         newY-=playerSpeed;
       }
 
-
-    
     uint16_t* coordPtr = walkTo(players[playerIndex][_x_],players[playerIndex][_y_],newX,newY);
-    // playerVector = xyToVector(playerPosX,playerPosY,coordPtr[0],coordPtr[1]);
     movePlayer(playerIndex,coordPtr[0],coordPtr[1]);
     delete coordPtr;
     
@@ -772,8 +800,6 @@ void drawLevel(){
   for(int i =0;i<numPlayers;i++){
     drawPlayer(i,players[i][_x_],players[i][_y_]);
   }
-  // drawPlayer(0,players[0][_x_]*BLOCK_SIZE,players[0][_y_]*BLOCK_SIZE);
-  // drawPlayer(1,players[1][_x_]*BLOCK_SIZE,players[1][_y_]*BLOCK_SIZE);
 }
 
 
@@ -826,20 +852,28 @@ void PCF8574_write(byte bytebuffer)
   Wire.endTransmission();
 }
 
+#define MASK 0b0000
 uint8_t nunchuckWrap(){
+
   nunchuckData = 0b0000;
   if(NunChuckPosition[0] > 128){
       nunchuckData = (1<<3) | nunchuckData;
   } else if( NunChuckPosition[0] < 128 ){
       nunchuckData = (1<<2) | nunchuckData;
   } 
+  
   if(NunChuckPosition[1] > 128){
-      nunchuckData = (1<<1) | nunchuckData;
+      nunchuckData = (1<<1) | MASK;
   } else if( NunChuckPosition[1] < 128 ){
-      nunchuckData = (1<<0) | nunchuckData;
+      nunchuckData = (1<<0) | MASK;
+  } 
+  if(NunChuckPosition[0] > 128){
+      nunchuckData = (1<<3) | MASK;
+  } else if( NunChuckPosition[0] < 128 ){
+      nunchuckData = (1<<2) | MASK;
   } 
   return nunchuckData;
-  }
+}
 
 void sendByte(uint8_t byte, bool address)
 {
@@ -861,11 +895,12 @@ void sendByte(uint8_t byte, bool address)
   
 }
 
+
 void sendCommand(uint8_t address, uint8_t command)
 {
   sendBegin();
   sendByte(address,true);
-  sendByte(command,false);
+  // sendByte(command,false);
   sendEnd();
 }
 
@@ -900,39 +935,147 @@ void moveOverIR(uint8_t playerIndex)
     
 }
 
+
+void printHighScore(char names[10][6],uint32_t scores[10]);
+void sort(char names[10][6],uint32_t scores[10], int pos[10]);
+void addScore(char name[6], uint32_t points);
+//function to call when going to highscore page
+void HighScorePage(){
+  setupHighScore();
+  getScore();
+  printHighScore(nameList,scoreList);
+}
+//clears the screen, sets the font and text color 
+bool setupHighScore(){
+  tft.fillScreen(BACKGROUND);
+  tft.setFont(&PressStart2P_vaV76pt7b);
+  tft.setTextColor(HIGHSCORECOLOR);
+  return 1;
+}
+//gets the EEPROM data, should only be called once every time the arduino starts up
+void getScore(){
+  char temp[6];
+  uint32_t temp2;
+  for(int i = 0;i<10;i++){
+    EEPROM.get(i*10,temp);
+    EEPROM.get(i*10+6,temp2);
+    for(int j = 0;j<6;j++){
+      nameList[i][j] = temp[j];
+    }
+    scoreList[i] = temp2;
+  }
+  sort(nameList,scoreList,posList);
+}
+//prints the highscores, uses the scoreList and nameList
+void printHighScore(char names[10][6],uint32_t scores[10]){
+  tft.fillScreen(BACKGROUND);
+  sort(nameList,scoreList,posList);
+  tft.setCursor(110,25);
+  tft.println("Highscore");
+  char bufHS[64];
+  char tempN[6];
+  long tempS;
+  for(int i = 9;i>=0;i--){
+    for(int j = 0;j<6;j++){
+      tempN[j] = names[i][j];
+    }
+    tempS = scoreList[i];
+    sprintf(bufHS,"%2i %-6s %10lu",10-i,tempN,tempS);
+    tft.setCursor(50,200-i*15);
+    tft.println(bufHS);
+  }
+}
+//sorts the highscores so that they get called in the correct order, uses insertion sort
+void sort(char names[10][6],uint32_t scores[10],int pos[10]){
+    char temp1[6] = {};
+    uint32_t temp2;
+    int temp3;
+    int j;
+    for(int p = 1;p< 10;p++){
+        for(int i = 0;i<6;i++){
+            temp1[i] = names[p][i];
+        }
+        temp2 = scores[p];
+        temp3 = posList[p];
+    for(j = p;j> 0 && temp2<scores[j-1];j--){
+        scores[j] = scores[j-1];
+        posList[j] = posList[j-1];
+    
+        for(int i = 0;i<6;i++){
+            names[j][i] = names[j-1][i];
+        }
+    }
+    scores[j] = temp2;
+    posList[j] = temp3;
+    for(int i = 0;i<6;i++){
+            names[j][i] = temp1[i];
+        }
+    }
+
+  }
+//fills EEPROM with mock scores
+void setupScore(){
+  char names[10][6] = {"henk","kees","klaas","piet","jan","wilem","jurre","andor","rick","jay"};
+  uint32_t scores[10] ={1000000,1000,8000,4000,3000,6000,2000,7000,9000,5000};
+  for(int i = 0;i<10;i++){
+    for(int j = 0;j<6;j++){
+    EEPROM.put(i*10+j,names[i][j]);
+    }
+    EEPROM.put(i*10+6,scores[i]);
+  }
+}
+//adds a new score to the EEPROM, also add it to scoreList and nameList so you dont have to read all the EEPROM data again
+void addScore(char name[6], uint32_t points){
+  if(points > scoreList[0]){
+    scoreList[0] = points;
+    for(int j = 0;j<6;j++){
+    nameList[0][j] = name[j];
+    EEPROM.put(posList[0]*10+j,name[j]);
+    }
+    EEPROM.put(posList[0]*10+6,points);
+  }  
+}
+
 int main(void)
 {
+    pacmanTheme.frequencies = notes::pacmanNotes;
+    pacmanTheme.durations = notes::pacmanDurations;
+    pacmanTheme.length = sizeof(notes::pacmanNotes) / sizeof(uint16_t);
+    setupBuzzer();
+    loadMusic(&pacmanTheme);
+    setVolume(100);
+    enableLoop();
+    playMusic();
+
     sei();
     initIR();
     Serial.begin(BAUDRATE);
     Wire.begin();
 
-    if(!setupNunchuck()){return 0;}
     if(!setupDisplay()){return 0;}
+    
+    uint8_t f = true;
+    while(!setupNunchuck())
+    {
+      if (f)
+      {
+        tft.fillScreen(ILI9341_BLACK);
+        tft.print("Please connect Nunchuk");
+        f = false;
+      }
+    }
 
     drawLevel();
 
     // Serial.print()
     while(1)
     {
-        // uint8_t data = 0b00001101;
-        // sendNEC(data); // Voorbeeld: Verstuur een testsignaal met waarde 0x00FF  
-        // sendnec in een for loop 8 keer aanroepen !!!!
-      // nunchuck en display
         getNunchukPosition();
-        nunchuckWrap();
-        // sendCommand(0b1101, nunchuckWrap());
-        // Serial.print("buffer result-> ");
-        // Serial.println(buffer);
-
-        // moveOverIR(1);
-        movePlayerNunchuk(playablePlayer);
-
+        sendCommand(nunchuckWrap(), nunchuckWrap());
+        moveOverIR(1);
+        movePlayerNunchuk(playablePlayer);  
         collision();
-        // delay(100);
         if(endGame()){Serial.println("game ended");return 0;}
-
-        
     } 
     return 0;
 }
