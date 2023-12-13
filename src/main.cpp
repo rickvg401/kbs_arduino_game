@@ -11,11 +11,8 @@
 #include <sound.h>
 #include <notes.h>
 
-// #include "SPI.h"
-// #include "Adafruit_GFX.h"
-// #include "Adafruit_ILI9341.h"
-// #include <avr/interrupt.h>
-// #include <Nunchuk.h>
+
+
 
 //general
 #define F_CPU 16000000ul
@@ -48,10 +45,14 @@ int posList[10] = {0,1,2,3,4,5,6,7,8,9}; //list to keep track of indexes in EEPR
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
 //game
+//game
 const int GAMECLOCK = 15; //ball updates every x times per second
-uint16_t playerPosX;
-uint16_t playerPosY;
+// uint16_t playerPosX;
+// uint16_t playerPosY;
+uint8_t numPlayers = 2;
+uint8_t playablePlayer = 0;
 uint16_t* playerVector = NULL;
+uint8_t nunchuckData = 0b0000;
 
 const uint16_t FIELD_WIDTH = 32;
 const uint16_t FIELD_HEIGHT = 24; // could be uint8_t
@@ -697,24 +698,27 @@ void drawPacmen(uint16_t x,uint16_t y){
 }
 
 
-void drawPlayer(uint16_t x, uint16_t y){
+void drawPlayer(uint8_t playerIndex , uint16_t x, uint16_t y){
 
     // tft.fillRect(playerX*BLOCK_SIZE, playerY*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE, PLAYER_COLOR);
     // tft.fillRect(x,y,BLOCK_SIZE,BLOCK_SIZE,PLAYER_COLOR);
     drawPacmen(x,y);
 
+    players[playerIndex][_x_] = x;
+    players[playerIndex][_y_] = y;
 
-    playerPosX = x;
-    playerPosY = y;
+    // playerPosX = x;
+    // playerPosY = y;
 }
 
 void drawPath(uint16_t x, uint16_t y){
     tft.fillRect(x,y,BLOCK_SIZE,BLOCK_SIZE,BACKGROUND);
 }
 
-void movePlayer(uint16_t newX,uint16_t newY){
-    drawPath(playerPosX,playerPosY);
-    drawPlayer(newX,newY);
+void movePlayer(uint8_t playerIndex,uint16_t newX,uint16_t newY){
+
+    drawPath(players[playerIndex][_x_],players[playerIndex][_y_]);
+    drawPlayer(playerIndex,newX,newY);
 }
 uint16_t* xyToVector(uint16_t x0,uint16_t y0,uint16_t x1,uint16_t y1){
   uint16_t* vector = new uint16_t[2];
