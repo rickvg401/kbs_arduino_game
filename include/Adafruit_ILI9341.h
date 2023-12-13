@@ -103,6 +103,8 @@
 #define ILI9341_GMCTRN1 0xE1 ///< Negative Gamma Correction
 //#define ILI9341_PWCTR6     0xFC
 
+
+
 // Color definitions
 #define ILI9341_BLACK 0x0000       ///<   0,   0,   0
 #define ILI9341_NAVY 0x000F        ///<   0,   0, 123
@@ -124,7 +126,7 @@
 #define ILI9341_GREENYELLOW 0xAFE5 ///< 173, 255,  41
 #define ILI9341_PINK 0xFC18        ///< 255, 130, 198
 
-//color from: https://gist.github.com/Kongduino/36d152c81bbb1214a2128a2712ecdd18
+//colors from: https://gist.github.com/Kongduino/36d152c81bbb1214a2128a2712ecdd18
 #define TFT_ALICEBLUE 0xF7DF
 #define TFT_ANTIQUEWHITE 0xFF5A
 #define TFT_AQUA 0x07FF
