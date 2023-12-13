@@ -6,6 +6,8 @@
 #include "display/Adafruit-GFX/Adafruit_GFX.h"
 #include "display/Adafruit_ILI9341.h"
 #include <util/delay.h>
+#include <sound.h>
+#include <notes.h>
 
 // #include "SPI.h"
 // #include "Adafruit_GFX.h"
@@ -60,7 +62,14 @@ const uint8_t playerSpeed = 1*BLOCK_SIZE;
 void PCF8574_write(byte bytebuffer);
 byte PCF8574_read();
 byte bits;
-
+    
+struct music pacmanTheme;
+namespace notes
+{
+  uint16_t pacmanNotes[] = {_C4, _C5, _G4, _E4, _C5, _G4, _C4S, _C5S, _G4S, _F4, _G4S, _F4, _C4, _C4, _C5, _G4, _E4, _C5, _G4, _E4, _D4, _D4S,_E4, _E4, _F4, _F4S, _F4, _F4S, _G4, _C5}; 
+  uint16_t pacmanDurations[sizeof(pacmanNotes) / sizeof(uint16_t)] = {300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100};
+}
+    
 
 // infrared vars
 volatile uint16_t prevCounterValue = 0;
@@ -945,17 +954,36 @@ void moveOverIR()
     uint16_t* coordPtr = walkTo(playerPosX,playerPosY,newX,newY);
     movePlayer(coordPtr[0],coordPtr[1]);
     delete coordPtr;
-    
 }
+
 int main(void)
 {
+    pacmanTheme.frequencies = notes::pacmanNotes;
+    pacmanTheme.durations = notes::pacmanDurations;
+    pacmanTheme.length = sizeof(notes::pacmanNotes) / sizeof(uint16_t);
+    setupBuzzer();
+    loadMusic(&pacmanTheme);
+    setVolume(100);
+    enableLoop();
+    playMusic();
+
     sei();
     initIR();
     Serial.begin(BAUDRATE);
     Wire.begin();
 
-    if(!setupNunchuck()){return 0;}
     if(!setupDisplay()){return 0;}
+    
+    uint8_t f = true;
+    while(!setupNunchuck())
+    {
+      if (f)
+      {
+        tft.fillScreen(ILI9341_BLACK);
+        tft.print("Please connect Nunchuk");
+        f = false;
+      }
+    }
 
     drawLevel();
 
