@@ -1,477 +1,118 @@
-#include <avr/interrupt.h>
-#include <Wire.h>
+#include <EEPROM.h>
 #include <Arduino.h>
-#include <Nunchuk.h>
-#include "SPI.h"
+#include "main.h"
 #include "display/Adafruit-GFX/Adafruit_GFX.h"
 #include "display/Adafruit_ILI9341.h"
-#include <util/delay.h>
+#include <Fonts/PressStart2P_vaV76pt7b.h>
 
-
-//serial
-#define SerialActive //if defined serial is active
-#define BAUDRATE 9600
-
-//nunchuk
-#define nunchuk_ID 0xA4 >> 1
-// unsigned char buffer[4];// array to store arduino output
-uint8_t NunChuckPosition[4];
-bool NunChuckPositionDivided = false;
-
-/*display*/
+char name [10][6] = {};
+uint32_t score [10] = {};
+int pos[10] = {0,1,2,3,4,5,6,7,8,9};
+bool setupHighScore();
+void getScore();
+void setupScore();
+void printHighScore(char names[10][6],uint32_t scores[10]);
+void sort(char name[10][6],uint32_t score[10], int pos[10]);
+void addScore(char naam[6], uint32_t points);
 #define TFT_DC 9
 #define TFT_CS 10
-Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
-
-//game
-uint16_t playerPosX;
-uint16_t playerPosY;
-
-
-// 7 segment display
-#define PCF8574_i2cAdr 0x21
-void PCF8574_write(byte bytebuffer);
-byte PCF8574_read();
-byte bits;
-
-
-// infrared vars
-volatile uint16_t prevCounterValue = 0;
-volatile uint16_t currentCounterValue = 0;
-volatile uint16_t pulseDuration = 0;
-volatile uint8_t eenofnull = 2;
-volatile uint16_t counter = 0;
-
-// ir 
-volatile bool logicalone = false;
-volatile bool logicalzero = false;
-volatile bool logicalend = false;
-volatile bool logicalbegin = false;
-
-volatile bool end = true;
-
-
-volatile uint16_t currentcounterone = 0;
-volatile uint16_t currentcounterzero = 0;
-
-volatile uint16_t currentcounterend = 0;
-volatile uint16_t currentcounterbegin = 0;
-
-
-bool setupDisplay();
-bool setupNunchuck();
-void drawPlayer(uint16_t x, uint16_t y);
-void drawPath(uint16_t x, uint16_t y);
-void movePlayer(uint16_t newX,uint16_t newY);
-void movePlayerNunchuk();
-void drawLevel();
-void getNunchukPosition();
-void PCF8574_write(byte bytebuffer);
-void addToBuffer();
-uint8_t clearbuffer();
-
-void sendNEC(uint8_t data) {
- 
-      if(data == 1 ) // && !logicalzero && !logicalone
-      {
-        // Verzend een logische '1'
-        // begin counter van 0 en tot die tijd zet infrared aan 
-        counter = 0;
-        logicalone = true;
-        TCCR0A |= (1<< COM0A0); // toggle pin met 38Khz
-      }
-      else if (data == 0 ) 
-      {
-        // Verzend een logische '0'
-        // begin counter van 0 en tot die tijd zet infrared aan
-        counter = 0;
-        logicalzero = true;
-        TCCR0A |= (1<<COM0A0); // toggle de pin met 38KHZ
-      }
-      while(logicalone || logicalzero || logicalend || logicalbegin)
-      {     
-      }
-
-}
-
-void sendEnd()
-{
-    counter = 0;
-    logicalend = true;
-    TCCR0A |= (1<<COM0A0); // toggle de pin met 38KHZ
-    while(logicalone || logicalzero || logicalend || logicalbegin)
-    {      
-    }
-}
-
-void sendBegin()
-{
-    counter = 0;
-    logicalbegin = true;
-    TCCR0A |= (1<<COM0A0); // toggle de pin met 38KHZ
-    while(logicalone || logicalzero || logicalend || logicalbegin)
-    {      
-    }
-}
-
-const uint8_t bufferSize = 8; // Grootte van de buffer in bytes
-uint8_t buffer[bufferSize]; // Array om de bits op te slaan
-uint8_t bufferIndex = 0; // Huidige index in de buffer
-
-void addToBuffer() {
-  if (bufferIndex < 8) { // Controleer of de buffer niet vol is
-   
-    
-    // Voeg het bit toe aan het juiste byte in de buffer
-    if (eenofnull == 1) {
-      buffer[bufferIndex] = 1; // Zet het bit op 1
-      Serial.println("adding 1 to buffer");
-    } else if(eenofnull == 0){
-      buffer[bufferIndex] = 0; // Zet het bit op 0
-      Serial.println("adding 0 to buffer");
-
-    }
-    
-    bufferIndex++; // Verhoog de bufferindex voor het volgende bit
-  } else {
-    
-    // Serial.println("buffer full");
-    clearbuffer();
-  }
-}
-
-uint8_t clearbuffer()
-{
-  uint8_t data = 0;
-  for (uint8_t i = 0; i < 8; i++)
-  {
-    data |= buffer[i] << i;
-  }
-  uint8_t buffer[bufferSize]; 
-  return data;
-}
-
-ISR(INT0_vect)
-{
-  uint8_t pinstatus = (PIND & (1<<PD2));
-  
- if(pinstatus)
- {
-
-    // opgaande flank bepaal je het verschil tussen huidige counterstand en de onthouden counterstand
-    // Je hebt dan gemeten hoe lang de puls duurde. Daarmee kan je
-    // bepalen of het uitgezonden bit een 0 of een 1 was. Schuif dit
-    // bit in het resulterende buffer.
-     currentCounterValue = counter;
-     pulseDuration = currentCounterValue - prevCounterValue;
-    if(pulseDuration > 160 && pulseDuration < 190) {
-      // Voeg '1' toe aan buffer
-      eenofnull = 1;  
-      
-    } else if (pulseDuration < 85 && pulseDuration > 70) {
-      // Voeg '0' toe aan buffer
-      eenofnull = 0;
-
-    } else if (pulseDuration < 300 && pulseDuration > 340)
-    {
-      end = true;
-      
-    } else if (pulseDuration < 552 && pulseDuration > 565)
-    {
-      end = false;
-
-    }
-
- } else {
-    
-    // bij een neergaande flank onthouden counter van timer 1
-    prevCounterValue = counter;
-    eenofnull = 2;
- }
-}
-
-ISR(TIMER0_COMPA_vect)
-{
-  // counter hier altijd ophogen 
-  counter++;
-
-  if (logicalone == true)
-  {
-    currentcounterone = counter;
-    if(currentcounterone > 200)
-    {
-      logicalone = false;
-    }
-    if ((currentcounterone ) >= (175)) // 175 // - prevcounteronevalue
-    {
-      // prevcounteronevalue = currentcounterone;
-      
-      TCCR0A &= ~(1 << COM0A0);
-      // PORTD &= ~(1 << PD6);
-      
-
-    }
-  }
-
-  if (logicalzero == true)
-  {
-    currentcounterzero = counter;
-    if(currentcounterzero > 100)
-    {
-      logicalzero = false;
-    }
-    if ((currentcounterzero ) >= (75)) // 75 // - prevcounterzerovalue
-    {
-      // prevcounterzerovalue = currentcounterzero;
-
-      TCCR0A &= ~(1 << COM0A0);
-      // PORTD &= ~(1 << PD6);
-     
-      
-    }
-  }
-  //begin 555
-  if(logicalbegin == true)
-  {
-    currentcounterbegin = counter;
-    if(currentcounterbegin > 575)
-    {
-      logicalbegin = false;
-    }
-    if((currentcounterbegin) >= (555))
-    {
-      TCCR0A &= ~(1 << COM0A0);
-    }
-  }
-
-  //end 310
-  if(logicalend == true)
-  {
-    currentcounterend = counter;
-    if(currentcounterend > 325)
-    {
-      logicalend = false;
-    }
-    if((currentcounterend) >= (310))
-    {
-      TCCR0A &= ~(1 << COM0A0);
-    }
-  }
-}
-
-void initIR()
-{
-    DDRD |= (1<<DDD6); // ir led op gameshield
-
-    // TCCR1A &= ~(1<<COM1A0); // disable  -> toggle OC1A pin 9 on compare match
-
-    // timer 0 voor irled
-    OCR0A = 208;
-    TCCR0A |= (1<<WGM01);
-    TCCR0B |= (1<<CS00); // no prescaler
-    TIMSK0 |= (1<<OCIE0A); // enable timer compare interrupt
-
-    TCCR0A &= ~(1<<COM0A0);// toggle OC0A pin 6
-
-    // external interrupt
-    EIMSK |= (1<<INT0); // int0 external interrupt aan
-    EICRA |= (1<<ISC00); // any logical change generate interrupt
-    EIFR |= (1 << INTF0);
-
-}
-
-
+#define BACKGROUND ILI9341_BLACK
+#define TEXTCOLOR ILI9341_YELLOW
+#define NAAM "Jurre"
+Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS,TFT_DC);
 bool setupDisplay(){
-    //returned if setup is correctly completed
-    tft.begin();
-    return true;
+  tft.begin();
+  tft.setRotation(1);
+  return true;
 }
-
-bool setupNunchuck(){
-    if(!Nunchuk.begin(nunchuk_ID)){
-        #ifdef SerialActive
-        Serial.println("******** No nunchuk found");
-        Serial.flush();
-        #endif
-        return(false);
+int main(){
+  setupDisplay();
+  setupHighScore();
+  getScore();
+  printHighScore(name,score);
+  return 1;
+}
+bool setupHighScore(){
+  tft.fillScreen(BACKGROUND);
+  tft.setFont(&PressStart2P_vaV76pt7b);
+  tft.setTextColor(TEXTCOLOR);
+  return 1;
+}
+void getScore(){
+  char temp[6];
+  uint32_t temp2;
+  for(int i = 0;i<10;i++){
+    EEPROM.get(i*10,temp);
+    EEPROM.get(i*10+6,temp2);
+    for(int j = 0;j<6;j++){
+      name[i][j] = temp[j];
     }
-    #ifdef SerialActive
-    Serial.print("-------- Nunchuk with Id: ");
-	Serial.println(Nunchuk.id);
-    #endif
-    return true;
+    score[i] = temp2;
+  }
+  sort(name,score,pos);
 }
-
-
-
-void drawPlayer(uint16_t x, uint16_t y){
-    tft.fillRect(x,y,25,25,ILI9341_DARKCYAN);
-    playerPosX = x;
-    playerPosY = y;
+void printHighScore(char names[10][6],uint32_t scores[10]){
+  tft.fillScreen(BACKGROUND);
+  sort(name,score,pos);
+  tft.setCursor(110,25);
+  tft.println("Highscore");
+  char bufHS[64];
+  char tempN[6];
+  long tempS;
+  for(int i = 9;i>=0;i--){
+    for(int j = 0;j<6;j++){
+      tempN[j] = names[i][j];
+    }
+    tempS = score[i];
+    sprintf(bufHS,"%2i %-6s %10lu",10-i,tempN,tempS);
+    tft.setCursor(50,200-i*15);
+    tft.println(bufHS);
+  }
 }
-
-void drawPath(uint16_t x, uint16_t y){
-    tft.fillRect(x,y,25,25,ILI9341_BLACK);
-}
-
-void movePlayer(uint16_t newX,uint16_t newY){
-    drawPath(playerPosX,playerPosY);
-    drawPlayer(newX,newY);
-}
-
-
-void movePlayerNunchuk(){
-    drawPath(playerPosX,playerPosY);
-    
-    
-    uint16_t newX = playerPosX + ((NunChuckPosition[0]-128)/100*1);
-    uint16_t newY = playerPosY + ((NunChuckPosition[1]-128)/100*1);
-
-    drawPlayer(newX,newY);
-}
-
-void drawLevel(){
-    // for(int i=0;i<100;i+=25){
-    //     drawPath(i,200);
-    // }
-}
-
-
-void getNunchukPosition(){
-
-    if(!Nunchuk.getState(nunchuk_ID)){
-        return;
-    } 
-    
-    // uint8_t x = Nunchuk.state.joy_x_axis;
-    // uint8_t y = Nunchuk.state.joy_y_axis;
-    //flipped
-    uint8_t x = Nunchuk.state.joy_y_axis;
-    uint8_t y = Nunchuk.state.joy_x_axis;
-    
-    
-
-    uint8_t c = Nunchuk.state.c_button;
-    uint8_t z = Nunchuk.state.z_button;
-    
-    
-
-    if(NunChuckPositionDivided){
-        if(x != 128){
-            NunChuckPosition[0] = x<128 ? 50 : 200;}
-        else{
-            NunChuckPosition[0] = 128;
+void sort(char names[10][6],uint32_t scores[10],int pos[10]){
+    char temp1[6] = {};
+    uint32_t temp2;
+    int temp3;
+    int j;
+    for(int p = 1;p< 10;p++){
+        for(int i = 0;i<6;i++){
+            temp1[i] = names[p][i];
         }
-        if(y != 128){
-                NunChuckPosition[1] = y>128 ? 50 : 200;} 
-        else{
-                NunChuckPosition[1] = 128;
+        temp2 = scores[p];
+        temp3 = pos[p];
+    for(j = p;j> 0 && temp2<scores[j-1];j--){
+        scores[j] = scores[j-1];
+        pos[j] = pos[j-1];
+    
+        for(int i = 0;i<6;i++){
+            names[j][i] = names[j-1][i];
         }
-        NunChuckPosition[2] = c ? 0 : 1;
-        NunChuckPosition[3] = z ? 0 : 1;
-
-
-    }else{
-        NunChuckPosition[0] = x;
-        NunChuckPosition[1] = y;
-        NunChuckPosition[2] = c;
-        NunChuckPosition[3] = z;
+    }
+    scores[j] = temp2;
+    pos[j] = temp3;
+    for(int i = 0;i<6;i++){
+            names[j][i] = temp1[i];
+        }
     }
 
-    
-  
+  }
+void setupScore(){
+  char names[10][6] = {"henk","kees","klaas","piet","jan","wilem","jurre","andor","rick","jay"};
+  uint32_t scores[10] ={1000000,1000,8000,4000,3000,6000,2000,7000,9000,5000};
+  for(int i = 0;i<10;i++){
+    for(int j = 0;j<6;j++){
+    EEPROM.put(i*10+j,names[i][j]);
+    }
+    EEPROM.put(i*10+6,scores[i]);
+  }
 }
-
-void PCF8574_write(byte bytebuffer)
-{
-  Wire.beginTransmission(PCF8574_i2cAdr);
-  Wire.write(bytebuffer);
-  Wire.endTransmission();
-}
-
-
-int main(void)
-{
-    sei();
-    initIR();
-    #ifdef SerialActive
-    Serial.begin(BAUDRATE);
-    #endif
-    Wire.begin();
-
-    if(!setupNunchuck()){return 0;}
-    if(!setupDisplay()){return 0;}
-
-
-    tft.fillScreen(ILI9341_RED);
-    // drawLevel();
-    drawPlayer(128,128);
-    // drawPath(100,128);
-
-    while(1)
-    {
-        // uint8_t data = 0b00001101;
-        // sendNEC(data); // Voorbeeld: Verstuur een testsignaal met waarde 0x00FF  
-        // sendnec in een for loop 8 keer aanroepen !!!!
-      // nunchuck en display
-        getNunchukPosition();
-        // addToBuffer();
-        // sendNEC(2);
-        // if(!end)
-        // {
-        //   bufferIndex = 0;
-        //   for (uint8_t i = 0; i < 8; i++)
-        //   {
-        //     buffer[i] = 0;
-        //   }
-        // }
-        
-        if(NunChuckPosition[2])
-        {
-          // sendNEC(0);
-          // sendBegin();
-
-          uint8_t bittosend = 0b00001111;
-          sendBegin();
-          for (uint8_t i = 0; i < 8 ; i++)
-          {
-            uint8_t lsb = bittosend & 0x01;
-            sendNEC(lsb);
-            bittosend = bittosend >> 1;
-
-            if (end == false)
-            {
-              Serial.println(pulseDuration);
-            }
-          } 
-          sendEnd();
-          // Serial.println("einde");
-
-          // for (int i = 0; i < 8; i++)
-          // {
-          //   Serial.print(buffer[i]);
-          // }
-          // Serial.println("\n");
-
-        } 
-        else if(NunChuckPosition[3]) {
-          // sendNEC(0);
-          // sendEnd();
-          sendBegin();
-        }
-       
-
-        if(eenofnull == 1)
-        {
-          PCF8574_write(0b11111111);
-        } else if(eenofnull == 0) {
-          PCF8574_write((0b00000000));
-        }
-
-        // Serial.println(pulseDuration);
-        // movePlayer(NunChuckPosition[1],NunChuckPosition[0]);
-        movePlayerNunchuk();
-        
-    } 
-    return 0;
+void addScore(char naam[6], uint32_t points){
+  if(points > score[0]){
+    score[0] = points;
+    for(int j = 0;j<6;j++){
+    name[0][j] = naam[j];
+    EEPROM.put(pos[0]*10+j,naam[j]);
+    }
+    EEPROM.put(pos[0]*10+6,points);
+  }  
 }
