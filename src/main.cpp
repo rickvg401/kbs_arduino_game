@@ -214,6 +214,28 @@ void drawField(uint8_t field[FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION])
 //   tft.fillRect(playerX*BLOCK_SIZE, playerY*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE, PLAYER_COLOR);
 // }
 
+uint8_t encodeGridPosition(uint16_t* coords){//max 16x16 grid with 8bits
+
+  uint8_t coordX =  coords[_x_] / BLOCK_SIZE;
+  uint8_t coordy =  coords[_y_] / BLOCK_SIZE;
+
+  
+
+  //4bit x pos , 4bit y pos
+  uint8_t gridpos = (coordX << 4)|(coordy & 0xF);
+
+  return gridpos;
+}
+
+uint16_t* decodeGridPosition(uint8_t gridpos){//max 16x16 grid with 8bits
+  uint16_t *coords= new uint16_t[2];
+  
+  coords[0] = ((gridpos>>4))*BLOCK_SIZE;
+  coords[1] = (gridpos & 0xF)*BLOCK_SIZE;
+
+  return coords;
+}
+
 void collectCoin(uint16_t playerIndex,uint16_t coinIndex){
   // Serial.print("collect coin");
   playerResult[playerIndex]+=1;
@@ -782,7 +804,12 @@ void movePlayerNunchuk(uint8_t playerIndex){
       }
 
     uint16_t* coordPtr = walkTo(players[playerIndex][_x_],players[playerIndex][_y_],newX,newY);
+
+    uint8_t gridpos=  encodeGridPosition(coordPtr); // arduino 0 verstuurd gridpos
+    uint16_t* gridPtr = decodeGridPosition(gridpos);// arduino 1 ontvangt gridpos
+
     movePlayer(playerIndex,coordPtr[0],coordPtr[1]);
+    delete gridPtr;
     delete coordPtr;
     
     
