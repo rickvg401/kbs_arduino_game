@@ -500,15 +500,15 @@ ISR(INT0_vect)
      currentCounterValue = counter;
      pulseDuration = abs(currentCounterValue - prevCounterValue);
 
-     if(bufferIndex == 4)
+     if(bufferIndex == 12)
      {
       bufferIndex = 0;
      }
     if (pulseDuration > 290 && pulseDuration < 320)
     {
       end = 1;
-      bufferdata = buffer ;
-      
+      bufferdata = buffer >> 4;
+      buffer = buffer >> 4;
     }
 
     if (pulseDuration > 260 && pulseDuration < 280) // 552 // 565
@@ -533,7 +533,7 @@ ISR(INT0_vect)
       bufferIndex++;
     }
 
- } else {
+  } else {
     
     // bij een neergaande flank onthouden counter van timer 1
     prevCounterValue = counter;
@@ -923,11 +923,11 @@ void sendByte(uint8_t byte, bool address)
 }
 
 
-void sendCommand(uint8_t address, uint8_t command)
+void sendCommand(uint8_t nunchukdata, uint8_t command)
 {
   sendBegin();
-  sendByte(address,true);
-  // sendByte(command,false);
+  sendByte(nunchukdata,true);
+  sendByte(command,false);
   sendEnd();
 }
 
@@ -1063,6 +1063,21 @@ void addScore(char name[6], uint32_t points){
   }  
 }
 
+void printbits(uint8_t byte)
+{
+  for (int16_t i = 7; i >= 0; i--)
+  {
+    if(byte & (1<<i))
+    {
+      Serial.print("1");
+    } else {
+      Serial.print("0");
+    }
+    
+  }
+  Serial.println(" ");
+  
+}
 int main(void)
 {
     pacmanTheme.frequencies = notes::pacmanNotes;
@@ -1093,8 +1108,7 @@ int main(void)
     }
 
 
-    HighScorePage();
-    _delay_ms(2000);
+ 
 
 
     drawLevel();
@@ -1103,8 +1117,16 @@ int main(void)
     while(1)
     {
         getNunchukPosition();
-        sendCommand(nunchuckWrap(), nunchuckWrap());
-        moveOverIR(1);
+        sendCommand(nunchuckWrap(), encodeGridPosition(players[0]));
+        // moveOverIR(1);
+        // Serial.println(buffer);
+        Serial.print("buffer data ----- >>>>>>> ");
+        printbits(bufferdata);
+        Serial.print("buffer - >>>>>>>>>>>>>>>>>>");
+        printbits(buffer);
+        // Serial.print("encodegridposition->>>>>>>>>>>>>>>>>>>");
+        // Serial.println(encodeGridPosition(players[0]));
+        // printbits(55);
         movePlayerNunchuk(playablePlayer);  
         collision();
         if(endGame()){Serial.println("game ended");break;}
