@@ -1,43 +1,97 @@
-const uint8_t COINS_LENGTH  = 7;
-const uint8_t GHOSTS_LENGTH = 0;
-const uint8_t PLAYER_LENGTH = 6;
-uint16_t coins[7][2] = {
+const uint8_t COINS_LENGTH2  = 64;
+const uint8_t GHOSTS_LENGTH2 = 1;
+const uint8_t PLAYER_LENGTH2 = 2;
+uint16_t coins2[64][2] = {
 {1*BLOCK_SIZE,1*BLOCK_SIZE},
-{1*BLOCK_SIZE,4*BLOCK_SIZE},
+{3*BLOCK_SIZE,1*BLOCK_SIZE},
 {5*BLOCK_SIZE,1*BLOCK_SIZE},
 {7*BLOCK_SIZE,1*BLOCK_SIZE},
-{6*BLOCK_SIZE,1*BLOCK_SIZE},
+{7*BLOCK_SIZE,3*BLOCK_SIZE},
+{9*BLOCK_SIZE,3*BLOCK_SIZE},
+{9*BLOCK_SIZE,1*BLOCK_SIZE},
 {11*BLOCK_SIZE,1*BLOCK_SIZE},
-{1*BLOCK_SIZE,10*BLOCK_SIZE},
-};
-bool coinsCatched[7] = {false,false,false,false,false,false,false,};
-uint16_t players[6][2] = {
-{1*BLOCK_SIZE,13*BLOCK_SIZE},
-{1*BLOCK_SIZE,12*BLOCK_SIZE},
-{1*BLOCK_SIZE,14*BLOCK_SIZE},
+{13*BLOCK_SIZE,1*BLOCK_SIZE},
+{14*BLOCK_SIZE,2*BLOCK_SIZE},
+{14*BLOCK_SIZE,4*BLOCK_SIZE},
+{14*BLOCK_SIZE,6*BLOCK_SIZE},
+{14*BLOCK_SIZE,8*BLOCK_SIZE},
+{12*BLOCK_SIZE,8*BLOCK_SIZE},
+{12*BLOCK_SIZE,6*BLOCK_SIZE},
+{12*BLOCK_SIZE,4*BLOCK_SIZE},
+{12*BLOCK_SIZE,2*BLOCK_SIZE},
+{11*BLOCK_SIZE,3*BLOCK_SIZE},
+{5*BLOCK_SIZE,3*BLOCK_SIZE},
+{3*BLOCK_SIZE,3*BLOCK_SIZE},
+{4*BLOCK_SIZE,2*BLOCK_SIZE},
+{1*BLOCK_SIZE,3*BLOCK_SIZE},
+{3*BLOCK_SIZE,5*BLOCK_SIZE},
+{5*BLOCK_SIZE,5*BLOCK_SIZE},
+{6*BLOCK_SIZE,4*BLOCK_SIZE},
+{7*BLOCK_SIZE,5*BLOCK_SIZE},
+{9*BLOCK_SIZE,5*BLOCK_SIZE},
+{10*BLOCK_SIZE,4*BLOCK_SIZE},
+{3*BLOCK_SIZE,7*BLOCK_SIZE},
+{1*BLOCK_SIZE,7*BLOCK_SIZE},
+{2*BLOCK_SIZE,8*BLOCK_SIZE},
+{3*BLOCK_SIZE,9*BLOCK_SIZE},
+{4*BLOCK_SIZE,10*BLOCK_SIZE},
+{6*BLOCK_SIZE,10*BLOCK_SIZE},
+{8*BLOCK_SIZE,9*BLOCK_SIZE},
+{8*BLOCK_SIZE,7*BLOCK_SIZE},
+{8*BLOCK_SIZE,6*BLOCK_SIZE},
+{10*BLOCK_SIZE,7*BLOCK_SIZE},
+{10*BLOCK_SIZE,9*BLOCK_SIZE},
+{12*BLOCK_SIZE,9*BLOCK_SIZE},
+{11*BLOCK_SIZE,10*BLOCK_SIZE},
+{9*BLOCK_SIZE,10*BLOCK_SIZE},
+{3*BLOCK_SIZE,11*BLOCK_SIZE},
 {2*BLOCK_SIZE,12*BLOCK_SIZE},
-{2*BLOCK_SIZE,13*BLOCK_SIZE},
+{1*BLOCK_SIZE,11*BLOCK_SIZE},
+{1*BLOCK_SIZE,13*BLOCK_SIZE},
+{1*BLOCK_SIZE,10*BLOCK_SIZE},
 {2*BLOCK_SIZE,14*BLOCK_SIZE},
+{4*BLOCK_SIZE,14*BLOCK_SIZE},
+{5*BLOCK_SIZE,13*BLOCK_SIZE},
+{4*BLOCK_SIZE,12*BLOCK_SIZE},
+{8*BLOCK_SIZE,13*BLOCK_SIZE},
+{9*BLOCK_SIZE,12*BLOCK_SIZE},
+{10*BLOCK_SIZE,11*BLOCK_SIZE},
+{9*BLOCK_SIZE,14*BLOCK_SIZE},
+{11*BLOCK_SIZE,14*BLOCK_SIZE},
+{13*BLOCK_SIZE,14*BLOCK_SIZE},
+{14*BLOCK_SIZE,13*BLOCK_SIZE},
+{13*BLOCK_SIZE,12*BLOCK_SIZE},
+{14*BLOCK_SIZE,11*BLOCK_SIZE},
+{14*BLOCK_SIZE,10*BLOCK_SIZE},
+{12*BLOCK_SIZE,11*BLOCK_SIZE},
+{13*BLOCK_SIZE,5*BLOCK_SIZE},
+{6*BLOCK_SIZE,12*BLOCK_SIZE},
 };
-uint16_t playerResult[6] = {0,0,0,0,0,0,};
-uint16_t ghosts[0][2] = {
+bool coinsCatched2[64] = {false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,};
+uint16_t players[2][2] = {
+{6*BLOCK_SIZE,14*BLOCK_SIZE},
+{7*BLOCK_SIZE,14*BLOCK_SIZE},
 };
-bool ghostsCatched[0] = {};
+uint16_t playerResult2[2] = {0,0,};
+uint16_t ghosts[1][2] = {
+{6*BLOCK_SIZE,7*BLOCK_SIZE},
+};
+bool ghostsCatched2[1] = {false,};
 uint8_t field[FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION] = {
 {0xFF,0xFF,},
+{0x80,0x81,},
+{0xB6,0xB5,},
+{0x80,0x05,},
+{0xEC,0xD5,},
+{0xA0,0x11,},
+{0xE7,0x75,},
+{0x8D,0x15,},
+{0x8F,0x51,},
+{0xE6,0x47,},
+{0xA0,0x05,},
+{0x87,0xD5,},
+{0x91,0x11,},
+{0xB9,0x7D,},
 {0x80,0x01,},
-{0xA1,0x01,},
-{0xA1,0x01,},
-{0xA1,0x09,},
-{0xA1,0x1D,},
-{0xBF,0x2B,},
-{0x80,0x09,},
-{0x80,0x09,},
-{0x80,0x09,},
-{0x80,0x09,},
-{0x80,0x09,},
-{0x80,0x3F,},
-{0x80,0x3F,},
-{0x80,0x3F,},
 {0xFF,0xFF,},
 };
