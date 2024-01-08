@@ -51,6 +51,10 @@ const int GAMECLOCK = 15; //ball updates every x times per second
 
 const uint8_t numPlayers = 2;
 uint8_t playablePlayer = 0;
+uint8_t playableGhost = 0;
+
+bool noCoins = true;
+bool noGhost = true;
 // uint16_t* playerVector = NULL;
 uint8_t nunchuckData = 0b0000;
 // uint16_t playerResult[] = {0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -144,6 +148,8 @@ void addScore(char name[6], uint32_t points);
 
 
 //game level
+uint8_t levelSelect = 0;
+
 const uint8_t COINS_LENGTH  = 7;
 const uint8_t GHOSTS_LENGTH = 0;
 const uint8_t PLAYER_LENGTH = 6;
@@ -189,83 +195,84 @@ uint8_t field[FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION] = {
 {0xFF,0xFF,},
 };
 
-const uint8_t COINS_LENGTH2  = 64;
+const uint8_t COINS_LENGTH2  = 0;
 const uint8_t GHOSTS_LENGTH2 = 1;
 const uint8_t PLAYER_LENGTH2 = 2;
-uint16_t coins2[64][2] = {
-{1*BLOCK_SIZE,1*BLOCK_SIZE},
-{3*BLOCK_SIZE,1*BLOCK_SIZE},
-{5*BLOCK_SIZE,1*BLOCK_SIZE},
-{7*BLOCK_SIZE,1*BLOCK_SIZE},
-{7*BLOCK_SIZE,3*BLOCK_SIZE},
-{9*BLOCK_SIZE,3*BLOCK_SIZE},
-{9*BLOCK_SIZE,1*BLOCK_SIZE},
-{11*BLOCK_SIZE,1*BLOCK_SIZE},
-{13*BLOCK_SIZE,1*BLOCK_SIZE},
-{14*BLOCK_SIZE,2*BLOCK_SIZE},
-{14*BLOCK_SIZE,4*BLOCK_SIZE},
-{14*BLOCK_SIZE,6*BLOCK_SIZE},
-{14*BLOCK_SIZE,8*BLOCK_SIZE},
-{12*BLOCK_SIZE,8*BLOCK_SIZE},
-{12*BLOCK_SIZE,6*BLOCK_SIZE},
-{12*BLOCK_SIZE,4*BLOCK_SIZE},
-{12*BLOCK_SIZE,2*BLOCK_SIZE},
-{11*BLOCK_SIZE,3*BLOCK_SIZE},
-{5*BLOCK_SIZE,3*BLOCK_SIZE},
-{3*BLOCK_SIZE,3*BLOCK_SIZE},
-{4*BLOCK_SIZE,2*BLOCK_SIZE},
-{1*BLOCK_SIZE,3*BLOCK_SIZE},
-{3*BLOCK_SIZE,5*BLOCK_SIZE},
-{5*BLOCK_SIZE,5*BLOCK_SIZE},
-{6*BLOCK_SIZE,4*BLOCK_SIZE},
-{7*BLOCK_SIZE,5*BLOCK_SIZE},
-{9*BLOCK_SIZE,5*BLOCK_SIZE},
-{10*BLOCK_SIZE,4*BLOCK_SIZE},
-{3*BLOCK_SIZE,7*BLOCK_SIZE},
-{1*BLOCK_SIZE,7*BLOCK_SIZE},
-{2*BLOCK_SIZE,8*BLOCK_SIZE},
-{3*BLOCK_SIZE,9*BLOCK_SIZE},
-{4*BLOCK_SIZE,10*BLOCK_SIZE},
-{6*BLOCK_SIZE,10*BLOCK_SIZE},
-{8*BLOCK_SIZE,9*BLOCK_SIZE},
-{8*BLOCK_SIZE,7*BLOCK_SIZE},
-{8*BLOCK_SIZE,6*BLOCK_SIZE},
-{10*BLOCK_SIZE,7*BLOCK_SIZE},
-{10*BLOCK_SIZE,9*BLOCK_SIZE},
-{12*BLOCK_SIZE,9*BLOCK_SIZE},
-{11*BLOCK_SIZE,10*BLOCK_SIZE},
-{9*BLOCK_SIZE,10*BLOCK_SIZE},
-{3*BLOCK_SIZE,11*BLOCK_SIZE},
-{2*BLOCK_SIZE,12*BLOCK_SIZE},
-{1*BLOCK_SIZE,11*BLOCK_SIZE},
-{1*BLOCK_SIZE,13*BLOCK_SIZE},
-{1*BLOCK_SIZE,10*BLOCK_SIZE},
-{2*BLOCK_SIZE,14*BLOCK_SIZE},
-{4*BLOCK_SIZE,14*BLOCK_SIZE},
-{5*BLOCK_SIZE,13*BLOCK_SIZE},
-{4*BLOCK_SIZE,12*BLOCK_SIZE},
-{8*BLOCK_SIZE,13*BLOCK_SIZE},
-{9*BLOCK_SIZE,12*BLOCK_SIZE},
-{10*BLOCK_SIZE,11*BLOCK_SIZE},
-{9*BLOCK_SIZE,14*BLOCK_SIZE},
-{11*BLOCK_SIZE,14*BLOCK_SIZE},
-{13*BLOCK_SIZE,14*BLOCK_SIZE},
-{14*BLOCK_SIZE,13*BLOCK_SIZE},
-{13*BLOCK_SIZE,12*BLOCK_SIZE},
-{14*BLOCK_SIZE,11*BLOCK_SIZE},
-{14*BLOCK_SIZE,10*BLOCK_SIZE},
-{12*BLOCK_SIZE,11*BLOCK_SIZE},
-{13*BLOCK_SIZE,5*BLOCK_SIZE},
-{6*BLOCK_SIZE,12*BLOCK_SIZE},
+uint16_t coins2[0][2] = {
+// {1*BLOCK_SIZE,1*BLOCK_SIZE},
+// {3*BLOCK_SIZE,1*BLOCK_SIZE},
+// {5*BLOCK_SIZE,1*BLOCK_SIZE},
+// {7*BLOCK_SIZE,1*BLOCK_SIZE},
+// {7*BLOCK_SIZE,3*BLOCK_SIZE},
+// {9*BLOCK_SIZE,3*BLOCK_SIZE},
+// {9*BLOCK_SIZE,1*BLOCK_SIZE},
+// {11*BLOCK_SIZE,1*BLOCK_SIZE},
+// {13*BLOCK_SIZE,1*BLOCK_SIZE},
+// {14*BLOCK_SIZE,2*BLOCK_SIZE},
+// {14*BLOCK_SIZE,4*BLOCK_SIZE},
+// {14*BLOCK_SIZE,6*BLOCK_SIZE},
+// {14*BLOCK_SIZE,8*BLOCK_SIZE},
+// {12*BLOCK_SIZE,8*BLOCK_SIZE},
+// {12*BLOCK_SIZE,6*BLOCK_SIZE},
+// {12*BLOCK_SIZE,4*BLOCK_SIZE},
+// {12*BLOCK_SIZE,2*BLOCK_SIZE},
+// {11*BLOCK_SIZE,3*BLOCK_SIZE},
+// {5*BLOCK_SIZE,3*BLOCK_SIZE},
+// {3*BLOCK_SIZE,3*BLOCK_SIZE},
+// {4*BLOCK_SIZE,2*BLOCK_SIZE},
+// {1*BLOCK_SIZE,3*BLOCK_SIZE},
+// {3*BLOCK_SIZE,5*BLOCK_SIZE},
+// {5*BLOCK_SIZE,5*BLOCK_SIZE},
+// {6*BLOCK_SIZE,4*BLOCK_SIZE},
+// {7*BLOCK_SIZE,5*BLOCK_SIZE},
+// {9*BLOCK_SIZE,5*BLOCK_SIZE},
+// {10*BLOCK_SIZE,4*BLOCK_SIZE},
+// {3*BLOCK_SIZE,7*BLOCK_SIZE},
+// {1*BLOCK_SIZE,7*BLOCK_SIZE},
+// {2*BLOCK_SIZE,8*BLOCK_SIZE},
+// {3*BLOCK_SIZE,9*BLOCK_SIZE},
+// {4*BLOCK_SIZE,10*BLOCK_SIZE},
+// {6*BLOCK_SIZE,10*BLOCK_SIZE},
+// {8*BLOCK_SIZE,9*BLOCK_SIZE},
+// {8*BLOCK_SIZE,7*BLOCK_SIZE},
+// {8*BLOCK_SIZE,6*BLOCK_SIZE},
+// {10*BLOCK_SIZE,7*BLOCK_SIZE},
+// {10*BLOCK_SIZE,9*BLOCK_SIZE},
+// {12*BLOCK_SIZE,9*BLOCK_SIZE},
+// {11*BLOCK_SIZE,10*BLOCK_SIZE},
+// {9*BLOCK_SIZE,10*BLOCK_SIZE},
+// {3*BLOCK_SIZE,11*BLOCK_SIZE},
+// {2*BLOCK_SIZE,12*BLOCK_SIZE},
+// {1*BLOCK_SIZE,11*BLOCK_SIZE},
+// {1*BLOCK_SIZE,13*BLOCK_SIZE},
+// {1*BLOCK_SIZE,10*BLOCK_SIZE},
+// {2*BLOCK_SIZE,14*BLOCK_SIZE},
+// {4*BLOCK_SIZE,14*BLOCK_SIZE},
+// {5*BLOCK_SIZE,13*BLOCK_SIZE},
+// {4*BLOCK_SIZE,12*BLOCK_SIZE},
+// {8*BLOCK_SIZE,13*BLOCK_SIZE},
+// {9*BLOCK_SIZE,12*BLOCK_SIZE},
+// {10*BLOCK_SIZE,11*BLOCK_SIZE},
+// {9*BLOCK_SIZE,14*BLOCK_SIZE},
+// {11*BLOCK_SIZE,14*BLOCK_SIZE},
+// {13*BLOCK_SIZE,14*BLOCK_SIZE},
+// {14*BLOCK_SIZE,13*BLOCK_SIZE},
+// {13*BLOCK_SIZE,12*BLOCK_SIZE},
+// {14*BLOCK_SIZE,11*BLOCK_SIZE},
+// {14*BLOCK_SIZE,10*BLOCK_SIZE},
+// {12*BLOCK_SIZE,11*BLOCK_SIZE},
+// {13*BLOCK_SIZE,5*BLOCK_SIZE},
+// {6*BLOCK_SIZE,12*BLOCK_SIZE},
 };
-bool coinsCatched2[64] = {false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,};
+bool coinsCatched2[0] ={}; //{false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,};
 uint16_t players2[2][2] = {
 {6*BLOCK_SIZE,14*BLOCK_SIZE},
 {7*BLOCK_SIZE,14*BLOCK_SIZE},
 };
 uint16_t playerResult2[2] = {0,0,};
 uint16_t ghosts2[1][2] = {
-{6*BLOCK_SIZE,7*BLOCK_SIZE},
+// {6*BLOCK_SIZE,7*BLOCK_SIZE},
+{2*BLOCK_SIZE,3*BLOCK_SIZE},
 };
 bool ghostsCatched2[1] = {false,};
 uint8_t field2[FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION] = {
@@ -290,10 +297,19 @@ uint8_t field2[FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION] = {
 
 uint8_t getTileAt (uint8_t x, uint8_t y)
 {
-  return (field[y][x / 8] & (1 << (7-(x % 8))) ? 1 : 0);
+  switch (levelSelect)
+  {
+    case 0:
+      return (field[y][x / 8] & (1 << (7-(x % 8))) ? 1 : 0);
+      break;
+
+    case 1:
+      return (field2[y][x / 8] & (1 << (7-(x % 8))) ? 1 : 0);
+      break;
+  }
 }
 
-void drawField(uint8_t field[FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION])
+void drawField()
 {
   for (uint16_t y = 0; y < FIELD_HEIGHT; y++)
   {
@@ -337,27 +353,61 @@ uint16_t* decodeGridPosition(uint8_t gridpos){//max 16x16 grid with 8bits
 
 void collectCoin(uint16_t playerIndex,uint16_t coinIndex){
   // Serial.print("collect coin");
-  playerResult[playerIndex]+=1;
-  coinsCatched[coinIndex] = true;
-  // Serial.print(playerIndex);
-  // Serial.print(":");
-  // Serial.print(playerResult[playerIndex]);
-  // Serial.println(" ");
-
-}
-
-void collectGhost(uint16_t playerIndex,uint16_t ghostIndex){
-  Serial.println("catched a ghost");
-}
-
-void drawCoins(){
-  for(int i=0;i<COINS_LENGTH;i++){
-    tft.fillRoundRect(coins[i][0], coins[i][1], BLOCK_SIZE, BLOCK_SIZE,100, COIN_COLOR);
+  switch (levelSelect)
+  {
+  case 0:
+    playerResult[playerIndex]+=1;
+    coinsCatched[coinIndex] = true;
+    break;
+  
+  case 1:
+    playerResult2[playerIndex]+=1;
+    coinsCatched2[coinIndex] = true;
+    break;
   }
 }
 
+void collectGhost(uint16_t playerIndex,uint16_t ghostIndex){
+
+
+  // Serial.println("catched a ghost");
+
+  switch (levelSelect)
+  {
+  case 0:
+    ghostsCatched[ghostIndex] = true;
+    break;
+  
+  case 1:
+    ghostsCatched2[ghostIndex] = true;
+    break;
+  }
+}
+
+void drawCoins(){
+  switch (levelSelect)
+  {
+  case 0:
+    for(int i=0;i<COINS_LENGTH;i++){
+      tft.fillRoundRect(coins[i][0], coins[i][1], BLOCK_SIZE, BLOCK_SIZE,100, COIN_COLOR);
+    }
+    
+    break;
+  
+  case 1:
+      for(int i=0;i<COINS_LENGTH2;i++){
+        tft.fillRoundRect(coins2[i][0], coins2[i][1], BLOCK_SIZE, BLOCK_SIZE,100, COIN_COLOR);
+      }
+      break;
+  }
+
+}
+
 void collision(){
-  for(int p = 0;(p<numPlayers&&p<PLAYER_LENGTH);p++){
+  switch (levelSelect)
+  {
+  case 0:
+    for(int p = 0;(p<numPlayers&&p<PLAYER_LENGTH);p++){
     uint16_t x = players[p][_x_];
     uint16_t y = players[p][_y_];
 
@@ -379,34 +429,144 @@ void collision(){
     }
 
 
+    }
+
+    break;
+  
+  case 1:
+    for(int p = 0;(p<numPlayers&&p<PLAYER_LENGTH2);p++){
+    uint16_t x = players2[p][_x_];
+    uint16_t y = players2[p][_y_];
+
+    
+    for(int c =0;c<COINS_LENGTH2;c++){
+      if(coins2[c][_x_] == x && coins2[c][_y_] == y){
+        if(!coinsCatched2[c]){
+          collectCoin(p,c);
+        }
+      }
+    }
+
+    for(int g=0;g<GHOSTS_LENGTH2;g++){
+      if(ghosts2[g][_x_] == x && ghosts2[g][_y_] == y){
+        if(!ghostsCatched2[g]){
+          collectGhost(p,g);
+        }
+      }
+    }
+
+
+    }
+
+    break;
   }
 
-  // 
+  
 }
 
 bool endGame(){
   bool noCoinsExist = true;
-  for(int c =0;c<COINS_LENGTH;c++){
-      if(!coinsCatched[c]){
-        noCoinsExist = false;
+  bool noGhostExist = true;
+
+  switch (levelSelect)
+  {
+  case 0:
+    if(!noCoins){
+      for(int c =0;c<COINS_LENGTH;c++){
+        if(!coinsCatched[c]){
+          noCoinsExist = false;
+        }
       }
     }
 
-  return noCoinsExist;  
+    if(!noGhost){
+      for(int g =0;g<GHOSTS_LENGTH;g++){
+        if(!ghostsCatched[g]){
+          noGhostExist = false;
+        }
+      }
+    }
+
+
+    break;
+  case 1:
+    if(!noCoins){
+      for(int c =0;c<COINS_LENGTH2;c++){
+        if(!coinsCatched2[c]){
+          noCoinsExist = false;
+        }
+      }
+    }
+
+    if(!noGhost){
+      for(int g =0;g<GHOSTS_LENGTH2;g++){
+        if(!ghostsCatched2[g]){
+          noGhostExist = false;
+        }
+      }
+    }
+    break;
+  }
+  
+
+  return noCoinsExist&&noGhostExist;  
 }
 
-// void moveGhost(){
-//   for(int i=0;i<GHOSTS_LENGTH;i++){
-//     tft.fillRoundRect(coins[i][0]*BLOCK_SIZE, coins[i][1]*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE,5, BACKGROUND);
-//   }
-// }
 
+void drawGhost(uint8_t ghostIndex , uint16_t x, uint16_t y,uint16_t color){
 
+// void drawGhost(uint16_t x,uint16_t y,uint16_t color){
+  tft.fillRoundRect(x, y, BLOCK_SIZE, BLOCK_SIZE,5, color);
+
+  switch (levelSelect)
+    {
+    case 0:
+      ghosts[ghostIndex][_x_] = x;
+      ghosts[ghostIndex][_y_] = y;
+      break;
+    
+    case 1:
+      ghosts2[ghostIndex][_x_] = x;
+      ghosts2[ghostIndex][_y_] = y;
+      break;
+    }
+
+}
+
+void moveGhost(uint8_t ghostIndex,uint16_t newX,uint16_t newY,uint16_t color){
+  switch (levelSelect)
+    {
+    case 0:
+      drawPath(ghosts[ghostIndex][_x_],ghosts[ghostIndex][_y_]);
+      break;
+    
+    case 1:
+      drawPath(ghosts2[ghostIndex][_x_],ghosts2[ghostIndex][_y_]);
+      break;
+    }
+  drawGhost(ghostIndex,newX,newY,color);
+}
 
 void drawGhosts(){
-  for(int i=0;i<GHOSTS_LENGTH;i++){
-    tft.fillRoundRect(coins[i][0], coins[i][1], BLOCK_SIZE, BLOCK_SIZE,5, GHOST_COLOR);
+  switch (levelSelect)
+  {
+  case 0:
+    for(int i=0;i<GHOSTS_LENGTH;i++){
+      // tft.fillRoundRect(ghosts[i][0], ghosts[i][1], BLOCK_SIZE, BLOCK_SIZE,5, GHOST_COLOR);
+      drawGhost(i,ghosts[i][0],ghosts[i][1],GHOST_COLOR);
+    }
+    break;
+  
+  case 1:
+    for(int i=0;i<GHOSTS_LENGTH2;i++){
+      // tft.fillRoundRect(ghosts2[i][0], ghosts2[i][1], BLOCK_SIZE, BLOCK_SIZE,5, GHOST_COLOR);
+      drawGhost(i,ghosts2[i][0],ghosts2[i][1],GHOST_COLOR);
+
+    }
+    break;
   }
+
+  
 }
 // void setSurrounding(uint8_t x, uint8_t y)
 // {
@@ -460,15 +620,16 @@ uint16_t* walkTo(uint16_t xFrom, uint16_t yFrom,uint16_t xTo,uint16_t yTo){
   int xg_m = revRound(xg);//main x
   int yg_m = revRound(yg);//main y
 
-  int xg_d = xg_m;//main down
-  int yg_d = yg_m+1;//main down
+/*
+  // int xg_d = xg_m;//main down
+  // int yg_d = yg_m+1;//main down
 
-  int xg_r = xg_m+1;//main right
-  int yg_r = yg_m;//main right
+  // int xg_r = xg_m+1;//main right
+  // int yg_r = yg_m;//main right
 
 
-  int xg_rd = xg_r;//main right down
-  int yg_rd = yg_d;//main right down
+  // int xg_rd = xg_r;//main right down
+  // int yg_rd = yg_d;//main right down
 
   // tft.width();
   // Serial.print(xTo);
@@ -500,14 +661,14 @@ uint16_t* walkTo(uint16_t xFrom, uint16_t yFrom,uint16_t xTo,uint16_t yTo){
   // Serial.print(xg_rd);
   // Serial.print(":");
   // Serial.print(yg_rd);
-
+*/
 
   bool xgmb = getTileAt(xg_m,yg_m);
   // Serial.print(xgmb);
 
-  getTileAt(xg_d,yg_d);
-  getTileAt(xg_r,yg_r);
-  getTileAt(xg_rd,yg_rd);
+  // getTileAt(xg_d,yg_d);
+  // getTileAt(xg_r,yg_r);
+  // getTileAt(xg_rd,yg_rd);
   
   // getTileAt()
   // uint16_t coords[2]= new uint16_t {100,230};
@@ -759,8 +920,18 @@ void drawPacmen(uint16_t x,uint16_t y){
 void drawPlayer(uint8_t playerIndex , uint16_t x, uint16_t y){
     drawPacmen(x,y);
 
-    players[playerIndex][_x_] = x;
-    players[playerIndex][_y_] = y;
+    switch (levelSelect)
+    {
+    case 0:
+      players[playerIndex][_x_] = x;
+      players[playerIndex][_y_] = y;
+      break;
+    
+    case 1:
+      players2[playerIndex][_x_] = x;
+      players2[playerIndex][_y_] = y;
+      break;
+    }
 }
 
 void drawPath(uint16_t x, uint16_t y){
@@ -768,122 +939,37 @@ void drawPath(uint16_t x, uint16_t y){
 }
 
 void movePlayer(uint8_t playerIndex,uint16_t newX,uint16_t newY){
-    drawPath(players[playerIndex][_x_],players[playerIndex][_y_]);
+    switch (levelSelect)
+    {
+    case 0:
+      drawPath(players[playerIndex][_x_],players[playerIndex][_y_]);
+      break;
+    
+    case 1:
+      drawPath(players2[playerIndex][_x_],players2[playerIndex][_y_]);
+      break;
+    }
+    
     drawPlayer(playerIndex,newX,newY);
 }
 
-uint16_t* xyToVector(uint16_t x0,uint16_t y0,uint16_t x1,uint16_t y1){
-  uint16_t* vector = new uint16_t[2];
-  
-  uint16_t vx = x0 - x1;
-  uint16_t vy = y0 - y1;
-
-  uint16_t l =(uint16_t) round(sqrt((sq(vx)+sq(vy))));//calc length of vector
-
-
-  if(x0==x1 && y0==y1){//1
-    vector[0] = 0;
-    vector[1] = 0;
-  }else
-
-  if(x0<x1 && y0==y1){//2
-    vector[0] = 90;
-    vector[1] = l;
-  }else
-
-  if(x0==x1 && y0<y1){//3
-    vector[0] = 0;
-    vector[1] = l;
-  }else
-
-  if(x0>x1 && y0==y1){//4
-    vector[0] = 270;
-    vector[1] = l;
-  }else
-  
-  if(x0==x1 && y0>y1){//5
-    vector[0] = 180;
-    vector[1] = l;
-  }else
-  
-  if(x0<x1 && y0>y1){//6
-    vector[0] = 135;
-    vector[1] = l;
-  }else
-
-  if(x0<x1 && y0<y1){//7
-    vector[0] = 45;
-    vector[1] = l;
-  }else
-
-  if(x0>x1 && y0<y1){//8
-    vector[0] = 315;
-    vector[1] = l;
-  }else
-
-  if(x0>x1 && y0>y1){//9
-    vector[0] = 225;
-    vector[1] = l;
-  }else{
-    Serial.println("unkown");
-  }
-  
-  return vector;
-}
-
-uint16_t* vectorToXY(uint16_t xb,uint16_t yb,uint16_t* vector){
-  uint16_t* xy = new uint16_t[2];
-  
-  uint16_t l = vector[1];
-  uint16_t s = round(sqrt((sq(l)/2)));//calc length to position
-
-  if(vector[0] == 0 && vector[1] == 0){
-    xy[0] = 0;
-    xy[1] = 0;
-  }else
-  if(vector[0] == 0){
-    xy[0] = xb;
-    xy[1] = yb+l;
-  }else
-  if(vector[0] == 45){
-    xy[0] = xb+s;
-    xy[1] = yb+s;
-  }else
-  if(vector[0] == 90){
-    xy[0] = xb+l;
-    xy[1] = yb; 
-  }else
-  if(vector[0] == 135){
-    xy[0] = xb+s;
-    xy[1] = yb-s;
-  }else
-  if(vector[0] == 180){
-    xy[0] = xb;
-    xy[1] = yb-l;
-  }else
-  if(vector[0] == 225){
-    xy[0] = xb-s;
-    xy[1] = yb-s;
-  }else
-  if(vector[0] == 270){
-    xy[0] = xb-l;
-    xy[1] = yb;
-  }else
-  if(vector[0] == 315){
-    xy[0] = xb-s;
-    xy[1] = yb+s;
-  }
-
-
-
-  return xy ;
-}
 
 void movePlayerNunchuk(uint8_t playerIndex){
+    uint16_t newX;
+    uint16_t newY;
 
+    switch (levelSelect)
+    {
+    case 0:
+      newX = players[playerIndex][_x_];
+      newY = players[playerIndex][_y_];
+      break;
     
-    uint16_t newX = players[playerIndex][_x_];
-    uint16_t newY = players[playerIndex][_y_];
+    case 1:
+      newX = players2[playerIndex][_x_];
+      newY = players2[playerIndex][_y_];
+      break;
+    } 
     
       if (nunchuckData & (1 << 3)) // 1000 <--
       {
@@ -902,13 +988,21 @@ void movePlayerNunchuk(uint8_t playerIndex){
         newY-=playerSpeed;
       }
 
-    uint16_t* coordPtr = walkTo(players[playerIndex][_x_],players[playerIndex][_y_],newX,newY);
+  uint16_t* coordPtr = NULL;
+  switch (levelSelect)
+    {
+    case 0:
+      coordPtr = walkTo(players[playerIndex][_x_],players[playerIndex][_y_],newX,newY);
+      break;
+    
+    case 1:
+      coordPtr = walkTo(players2[playerIndex][_x_],players2[playerIndex][_y_],newX,newY);
+      break;
+    }
+    
 
-    uint8_t gridpos=  encodeGridPosition(coordPtr); // arduino 0 verstuurd gridpos
-    uint16_t* gridPtr = decodeGridPosition(gridpos);// arduino 1 ontvangt gridpos
 
     movePlayer(playerIndex,coordPtr[0],coordPtr[1]);
-    delete gridPtr;
     delete coordPtr;
     
     
@@ -918,14 +1012,95 @@ void movePlayerNunchuk(uint8_t playerIndex){
 
 }
 
+void moveGhostNunchuk(uint8_t ghostIndex){
+    uint16_t newX;
+    uint16_t newY;
+
+    switch (levelSelect)
+    {
+    case 0:
+      newX = ghosts[ghostIndex][_x_];
+      newY = ghosts[ghostIndex][_y_];
+      break;
+    
+    case 1:
+      newX = ghosts2[ghostIndex][_x_];
+      newY = ghosts2[ghostIndex][_y_];
+      break;
+    } 
+    
+      if (nunchuckData & (1 << 3)) // 1000 <--
+      {
+        newX += playerSpeed;
+      }
+      else if (nunchuckData & (1 << 2)) // 0100 -->
+      {
+       newX-=playerSpeed;
+      }
+      else if (nunchuckData & (1 << 1)) // 0010 v
+      {
+        newY+=playerSpeed;
+      }
+      else if (nunchuckData == 1 ) // 0001 ^
+      {
+        newY-=playerSpeed;
+      }
+
+  uint16_t* coordPtr = NULL;
+  switch (levelSelect)
+    {
+    case 0:
+      coordPtr = walkTo(ghosts[ghostIndex][_x_],ghosts[ghostIndex][_y_],newX,newY);
+      break;
+    
+    case 1:
+      coordPtr = walkTo(ghosts2[ghostIndex][_x_],ghosts2[ghostIndex][_y_],newX,newY);
+      break;
+    }
+    
+    moveGhost(ghostIndex,coordPtr[0],coordPtr[1],GHOST_COLOR);
+    delete coordPtr;
+}
+
+void selectLevel(uint8_t level){
+
+  switch (level)
+  {
+  case 0:
+    levelSelect = 0;
+    noCoins = false;
+    noGhost = true;
+    break;
+  case 1:
+    levelSelect = 1;
+    noCoins = true;
+    noGhost = false;
+    break;
+  }
+
+
+}
+
 void drawLevel(){
   tft.fillScreen(BACKGROUND);
-  drawField(&field[0]);
+  drawField();
   drawCoins();
   drawGhosts();
-  for(int i =0;i<numPlayers;i++){
-    drawPlayer(i,players[i][_x_],players[i][_y_]);
+  switch (levelSelect)
+  {
+  case 0:
+    for(int i =0;i<numPlayers;i++){
+      drawPlayer(i,players[i][_x_],players[i][_y_]);
+    }
+    break;
+  
+  case 1:
+    for(int i =0;i<numPlayers;i++){
+      drawPlayer(i,players2[i][_x_],players2[i][_y_]);
+    }
+    break;
   }
+  
 }
 
 
@@ -1033,9 +1208,21 @@ void sendCommand(uint8_t address, uint8_t command)
 
 void moveOverIR(uint8_t playerIndex)
 {
-  
-    uint16_t newX = players[playerIndex][_x_];
-    uint16_t newY = players[playerIndex][_y_];
+    uint16_t newX;
+    uint16_t newY;
+
+    switch (levelSelect)
+    {
+    case 0:
+      newX = players[playerIndex][_x_];
+      newY = players[playerIndex][_y_];
+      break;
+    
+    case 1:
+      newX = players2[playerIndex][_x_];
+      newY = players2[playerIndex][_y_];
+      break;
+    } 
 
 
       if (bufferdata & (1 << 3)) // 1000 <--
@@ -1055,8 +1242,70 @@ void moveOverIR(uint8_t playerIndex)
         newY-=playerSpeed;
       }
 
-    uint16_t* coordPtr = walkTo(players[playerIndex][_x_],players[playerIndex][_y_],newX,newY);
+    uint16_t* coordPtr = NULL;
+    switch (levelSelect)
+    {
+      case 0:
+        coordPtr = walkTo(players[playerIndex][_x_],players[playerIndex][_y_],newX,newY);
+        break;
+      
+      case 1:
+        coordPtr = walkTo(players2[playerIndex][_x_],players2[playerIndex][_y_],newX,newY);
+        break;
+    }
     movePlayer(playerIndex,coordPtr[0],coordPtr[1]);
+    delete coordPtr;
+    
+}
+
+void moveGhostOverIR(uint8_t ghostIndex)
+{
+    uint16_t newX;
+    uint16_t newY;
+
+    switch (levelSelect)
+    {
+    case 0:
+      newX = ghosts[ghostIndex][_x_];
+      newY = ghosts[ghostIndex][_y_];
+      break;
+    
+    case 1:
+      newX = ghosts2[ghostIndex][_x_];
+      newY = ghosts2[ghostIndex][_y_];
+      break;
+    } 
+
+
+      if (bufferdata & (1 << 3)) // 1000 <--
+      {
+        newX += playerSpeed;
+      }
+      else if (bufferdata & (1 << 2)) // 0100 -->
+      {
+       newX-=playerSpeed;
+      }
+      else if (bufferdata & (1 << 1)) // 0010 v
+      {
+        newY+=playerSpeed;
+      }
+      else if (bufferdata == 1 ) // 0001 ^
+      {
+        newY-=playerSpeed;
+      }
+
+    uint16_t* coordPtr = NULL;
+    switch (levelSelect)
+    {
+      case 0:
+        coordPtr = walkTo(ghosts[ghostIndex][_x_],ghosts[ghostIndex][_y_],newX,newY);
+        break;
+      
+      case 1:
+        coordPtr = walkTo(ghosts2[ghostIndex][_x_],ghosts2[ghostIndex][_y_],newX,newY);
+        break;
+    }
+    moveGhost(ghostIndex,coordPtr[0],coordPtr[1],GHOST_COLOR);
     delete coordPtr;
     
 }
@@ -1192,10 +1441,10 @@ int main(void)
     }
 
 
-    HighScorePage();
-    _delay_ms(2000);
+    // HighScorePage();
+    // _delay_ms(2000);
 
-
+    selectLevel(1);
     drawLevel();
 
     // Serial.print()
@@ -1204,7 +1453,8 @@ int main(void)
         getNunchukPosition();
         sendCommand(nunchuckWrap(), nunchuckWrap());
         moveOverIR(1);
-        movePlayerNunchuk(playablePlayer);  
+        // movePlayerNunchuk(playablePlayer);  
+        moveGhostNunchuk(playableGhost);  
         collision();
         if(endGame()){Serial.println("game ended");break;}
     } 
