@@ -111,6 +111,10 @@ volatile uint8_t bufferIndex = 0; // Huidige index in de buffer
 volatile uint16_t buffer = 0;
 volatile uint8_t bufferdata = 0; // buffer zonder address bits
 
+//synchroon bool
+volatile bool synchroon = 1;
+volatile uint16_t currentcountersynchroon = 0;
+volatile bool synchroniseer = 0;
 
 bool setupDisplay();
 bool setupNunchuck();
@@ -131,7 +135,7 @@ void drawPlayer(uint16_t color);
 void drawCoins();
 void drawGhosts();
 bool canWalk(uint8_t, uint8_t);
-
+void syncPlayerLocation(uint16_t* coordPtr, uint8_t playerIndex);
 //void setSurrounding(uint8_t, uint8_t);
 
 void HighScorePage();
@@ -507,15 +511,15 @@ ISR(INT0_vect)
     if (pulseDuration > 290 && pulseDuration < 320)
     {
       end = 1;
-      bufferdata = buffer >> 4;
-      buffer = buffer >> 4;
+      // bufferdata = buffer >> 4;
+      // buffer = buffer >> 4; // logical end
     }
 
-    if (pulseDuration > 260 && pulseDuration < 280) // 552 // 565
+    if (pulseDuration > 260 && pulseDuration < 280) 
     {
       end = 0;
       buffer = 0;
-      bufferIndex = 0;
+      bufferIndex = 0; // logical begin
       
     }
 
@@ -597,6 +601,16 @@ ISR(TIMER0_COMPA_vect)
     {
       TCCR0A &= ~(1 << COM0A0);
     }
+  }
+  if(synchroon)
+  {
+    currentcountersynchroon = counter69;
+    if(currentcountersynchroon > 5000)
+    {
+      synchroniseer = true;
+      synchroon = false;
+    }
+    
   }
 }
 
@@ -926,7 +940,7 @@ void sendByte(uint8_t byte, bool address)
 void sendCommand(uint8_t nunchukdata, uint8_t command)
 {
   sendBegin();
-  sendByte(nunchukdata,true);
+  // sendByte(nunchukdata,true);
   sendByte(command,false);
   sendEnd();
 }
@@ -935,31 +949,41 @@ void sendCommand(uint8_t nunchukdata, uint8_t command)
 void moveOverIR(uint8_t playerIndex)
 {
   
-    uint16_t newX = players[playerIndex][_x_];
-    uint16_t newY = players[playerIndex][_y_];
+    // uint16_t newX = players[playerIndex][_x_];
+    // uint16_t newY = players[playerIndex][_y_];
 
 
-      if (bufferdata & (1 << 3)) // 1000 <--
-      {
-        newX += playerSpeed;
-      }
-      else if (bufferdata & (1 << 2)) // 0100 -->
-      {
-       newX-=playerSpeed;
-      }
-      else if (bufferdata & (1 << 1)) // 0010 v
-      {
-        newY+=playerSpeed;
-      }
-      else if (bufferdata == 1 ) // 0001 ^
-      {
-        newY-=playerSpeed;
-      }
+    //   if (bufferdata & (1 << 3)) // 1000 <--
+    //   {
+    //     newX += playerSpeed;
+    //   }
+    //   else if (bufferdata & (1 << 2)) // 0100 -->
+    //   {
+    //    newX-=playerSpeed;
+    //   }
+    //   else if (bufferdata & (1 << 1)) // 0010 v
+    //   {
+    //     newY+=playerSpeed;
+    //   }
+    //   else if (bufferdata == 1 ) // 0001 ^
+    //   {
+    //     newY-=playerSpeed;
+    //   }
 
-    uint16_t* coordPtr = walkTo(players[playerIndex][_x_],players[playerIndex][_y_],newX,newY);
-    movePlayer(playerIndex,coordPtr[0],coordPtr[1]);
-    delete coordPtr;
-    
+    // uint16_t* coordPtr = walkTo(players[playerIndex][_x_],players[playerIndex][_y_],newX,newY);
+    // movePlayer(playerIndex,coordPtr[0],coordPtr[1]);
+    // delete coordPtr;
+     if(buffer > 10 && buffer < 256 && synchroniseer){
+            syncPlayerLocation(decodeGridPosition(buffer), 1);
+            synchroon = true;
+        }
+}
+void syncPlayerLocation(uint16_t* coordPtr, uint8_t playerIndex)
+{
+  uint16_t* coordPtr2 = walkTo(players[playerIndex][_x_],players[playerIndex][_y_],coordPtr[_x_],coordPtr[_y_]);
+  movePlayer(playerIndex, coordPtr2[_x_], coordPtr2[_y_]);
+  delete coordPtr;
+  delete coordPtr2;
 }
 
 
@@ -1118,12 +1142,16 @@ int main(void)
     {
         getNunchukPosition();
         sendCommand(nunchuckWrap(), encodeGridPosition(players[0]));
-        // moveOverIR(1);
+        moveOverIR(1);
+        //  Serial.print("buffer - >>>>>>>>>>>>>>>>>>");
         // Serial.println(buffer);
-        Serial.print("buffer data ----- >>>>>>> ");
-        printbits(bufferdata);
-        Serial.print("buffer - >>>>>>>>>>>>>>>>>>");
-        printbits(buffer);
+
+       
+
+        // Serial.println(buffer);
+        // Serial.print("buffer data ----- >>>>>>> ");
+        // printbits(bufferdata);
+       
         // Serial.print("encodegridposition->>>>>>>>>>>>>>>>>>>");
         // Serial.println(encodeGridPosition(players[0]));
         // printbits(55);
