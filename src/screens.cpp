@@ -1,5 +1,4 @@
 #include <screens.h>
-#include <Arduino.h>
 
 screens nScreen = LOADING_SCREEN;
 screens cScreen = NO_SCREEN;
@@ -7,7 +6,7 @@ uint32_t touchX = 0;
 uint32_t touchY = 0;
 
 // general buttons
-buttons BTNreturn{0, 0, 30, 20, 1, 11, "<-", ILI9341_WHITE, ILI9341_RED, []()-> void 
+buttons BTNreturn{0, 0, 40, 40, 5, 11, "<-", ILI9341_WHITE, ILI9341_RED, []()-> void 
 {
     switch(nScreen)
     {
@@ -26,37 +25,34 @@ buttons BTNreturn{0, 0, 30, 20, 1, 11, "<-", ILI9341_WHITE, ILI9341_RED, []()-> 
 }};
 
 // loading screen buttons
-buttons BTNpressTooStart{115, 200, 90, 40, 3, 5, "press to start", ILI9341_BLACK, ILI9341_BLUE, []() -> void 
+buttons BTNpressTooStart{60, 200, 200, 40, 15, 5, "press to start", ILI9341_BLACK, ILI9341_BLUE, []() -> void 
 {
     nScreen = MENU_SCREEN;
 }};
 
 // menu screen buttons
-buttons BTNselectLevels{20, 30, 90, 40, 5, 5, "Select levels", ILI9341_WHITE, ILI9341_BLACK, []() -> void
+buttons BTNselectLevels{20, 60, 180, 40, 5, 10, "Select levels", ILI9341_WHITE, ILI9341_BLACK, []() -> void
 {
     nScreen = LEVEL_SCREEN;
 }};
 
-buttons BTNseeHighscores{20, 100, 90, 40, 5, 5, "See highscores", ILI9341_WHITE, ILI9341_BLACK, []() -> void
+buttons BTNseeHighscores{20, 120, 180, 40, 5, 10, "See highscores", ILI9341_WHITE, ILI9341_BLACK, []() -> void
 {
     // show highscore
 }};
 
 // level screen buttons
-buttons BTNlvl1{20, 20, 50, 50, 10, 10, "1", ILI9341_WHITE, ILI9341_BLACK, []()->void{
+buttons BTNlvl1{20, 60, 50, 50, 10, 10, "1", ILI9341_WHITE, ILI9341_BLACK, []()->void{
     // start level 1
 }};
-buttons BTNlvl2{80, 20, 50, 50, 10, 10, "2", ILI9341_WHITE, ILI9341_BLACK, []()->void{
+buttons BTNlvl2{80, 60, 50, 50, 10, 10, "2", ILI9341_WHITE, ILI9341_BLACK, []()->void{
     // start level 2
-}};
-buttons BTNlvl3{140, 20 ,50, 50, 10, 10, "3", ILI9341_WHITE, ILI9341_BLACK, []()->void{
-    // start level 3
 }};
 
 // buttons in appropriate array
 buttons loadingScreenButtons[] = {BTNpressTooStart};
 buttons menuScreenButtons[] = {BTNreturn, BTNselectLevels, BTNseeHighscores};
-buttons levelScreenButtons[] = {BTNreturn, BTNlvl1, BTNlvl2, BTNlvl3};
+buttons levelScreenButtons[] = {BTNreturn, BTNlvl1, BTNlvl2};
 
 // sizeof array
 uint8_t loadingScreenButtonsSize = sizeof(loadingScreenButtons) / sizeof(*loadingScreenButtons);
@@ -95,28 +91,38 @@ void drawButtons(Adafruit_ILI9341 &tft, buttons* bList, uint8_t bSize)
         }
 }
 
-void globalInit()
+void globalInit(Adafruit_ILI9341 &tft)
 {
+    tft.setTextSize(2);
     activeButton = 1;
 }
 
 void initLoadingScreen(Adafruit_ILI9341 &tft)
 {
-    globalInit();
+    globalInit(tft);
     tft.fillScreen(ILI9341_DARKCYAN);
+    tft.setTextSize(4);
+    tft.setCursor(10,10);
+    tft.print("PACMAN");
+    tft.setCursor(10,45);
+    tft.setTextSize(1);
+    tft.print("Made by ICTMCB group 3.");
+    tft.setCursor(10,55);
+    tft.print("By order of TamTam.");
+    tft.setTextSize(2);
     drawButtons(tft, loadingScreenButtons, loadingScreenButtonsSize);
 }
 
 void initMenuScreen(Adafruit_ILI9341 &tft)
 {
-    globalInit();
+    globalInit(tft);
     tft.fillScreen(ILI9341_CYAN);
     drawButtons(tft, menuScreenButtons, menuScreenButtonsSize);
 }
 
 void initLevelScreen(Adafruit_ILI9341 &tft)
 {
-    globalInit();
+    globalInit(tft);
     tft.fillScreen(ILI9341_GREEN);
     drawButtons(tft, levelScreenButtons, levelScreenButtonSize);
 }
@@ -160,7 +166,13 @@ void handleMenuScreen(Adafruit_ILI9341 &tft, actions action)
             {
                 if (inBound((buttons) menuScreenButtons[i]))
                 {
-                    ((buttons) menuScreenButtons[i]).action();
+                    if (i == activeButton)
+                        ((buttons) menuScreenButtons[i]).action();
+                    else
+                    {
+                        activeButton = i;
+                        drawButtons(tft, menuScreenButtons, menuScreenButtonsSize);
+                    }
                 }
             }
     }
@@ -182,7 +194,13 @@ void handleLevelScreen(Adafruit_ILI9341 &tft, actions action)
             {
                 if (inBound((buttons) levelScreenButtons[i]))
                 {
-                    ((buttons) levelScreenButtons[i]).action();
+                    if (i == activeButton)
+                        ((buttons) levelScreenButtons[i]).action();
+                    else
+                    {
+                        activeButton = i;
+                        drawButtons(tft, levelScreenButtons, levelScreenButtonSize);
+                    }
                 }
             }
     }

@@ -4,8 +4,6 @@
 #include <Adafruit_ILI9341.h>
 #include <stdint.h>
 
-
-
 const uint16_t ACTIVE_BUTTON_COLOR = ILI9341_ORANGE;
 
 enum screens {NO_SCREEN, LOADING_SCREEN, LEVEL_SCREEN, MENU_SCREEN, HIGHSCORE_SCREEN};

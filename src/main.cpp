@@ -12,6 +12,7 @@
 #include <notes.h>
 #include <screens.h>
 
+
 //general
 #define F_CPU 16000000ul
 #define _x_ 0
