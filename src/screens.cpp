@@ -1,10 +1,13 @@
 #include <screens.h>
+#include <Arduino.h>
 
 screens nScreen = LOADING_SCREEN;
 screens cScreen = NO_SCREEN;
+uint32_t touchX = 0;
+uint32_t touchY = 0;
 
 // general buttons
-buttons BTNreturn{0, 0, 15, 10, 1, 2, "<-", ILI9341_WHITE, ILI9341_RED, []()-> void 
+buttons BTNreturn{0, 0, 30, 20, 1, 11, "<-", ILI9341_WHITE, ILI9341_RED, []()-> void 
 {
     switch(nScreen)
     {
@@ -23,18 +26,18 @@ buttons BTNreturn{0, 0, 15, 10, 1, 2, "<-", ILI9341_WHITE, ILI9341_RED, []()-> v
 }};
 
 // loading screen buttons
-buttons BTNpressTooStart{115, 200, 90, 20, 3, 5, "press to start", ILI9341_BLACK, ILI9341_BLUE, []() -> void 
+buttons BTNpressTooStart{115, 200, 90, 40, 3, 5, "press to start", ILI9341_BLACK, ILI9341_BLUE, []() -> void 
 {
     nScreen = MENU_SCREEN;
 }};
 
 // menu screen buttons
-buttons BTNselectLevels{20, 20, 90, 20, 5, 5, "Select levels", ILI9341_WHITE, ILI9341_BLACK, []() -> void
+buttons BTNselectLevels{20, 30, 90, 40, 5, 5, "Select levels", ILI9341_WHITE, ILI9341_BLACK, []() -> void
 {
     nScreen = LEVEL_SCREEN;
 }};
 
-buttons BTNseeHighscores{20, 50, 90, 20, 5, 5, "See highscores", ILI9341_WHITE, ILI9341_BLACK, []() -> void
+buttons BTNseeHighscores{20, 100, 90, 40, 5, 5, "See highscores", ILI9341_WHITE, ILI9341_BLACK, []() -> void
 {
     // show highscore
 }};
@@ -61,6 +64,13 @@ uint8_t menuScreenButtonsSize = sizeof(menuScreenButtons) / sizeof(*menuScreenBu
 uint8_t levelScreenButtonSize = sizeof(levelScreenButtons) / sizeof(*levelScreenButtons);
 
 uint8_t activeButton;
+
+bool inBound(buttons b)
+{
+    if (b.x < touchX && touchX < b.x + b.width && b.y < touchY && touchY < b.y + b.height)
+        return true;
+    return false;
+}
 
 void drawButton(Adafruit_ILI9341 &tft, buttons b)
 {
@@ -122,6 +132,15 @@ void handleLoadingScreen(Adafruit_ILI9341 &tft, actions action)
             activeButton++;
             drawButtons(tft, loadingScreenButtons, loadingScreenButtonsSize);
             break;
+        case TOUCH:
+            for (size_t i = 0; i < loadingScreenButtonsSize; i++)
+            {
+                if (inBound((buttons) loadingScreenButtons[i]))
+                {
+                    ((buttons) loadingScreenButtons[i]).action();
+                }
+            }
+            
     }
 }
 
@@ -136,6 +155,14 @@ void handleMenuScreen(Adafruit_ILI9341 &tft, actions action)
             activeButton++;
             drawButtons(tft, menuScreenButtons, menuScreenButtonsSize);
             break;
+        case TOUCH:
+            for (size_t i = 0; i < menuScreenButtonsSize; i++)
+            {
+                if (inBound((buttons) menuScreenButtons[i]))
+                {
+                    ((buttons) menuScreenButtons[i]).action();
+                }
+            }
     }
 }
 
@@ -150,6 +177,14 @@ void handleLevelScreen(Adafruit_ILI9341 &tft, actions action)
             activeButton++;
             drawButtons(tft, levelScreenButtons, levelScreenButtonSize);
             break;
+        case TOUCH:
+            for (size_t i = 0; i < levelScreenButtonSize; i++)
+            {
+                if (inBound((buttons) levelScreenButtons[i]))
+                {
+                    ((buttons) levelScreenButtons[i]).action();
+                }
+            }
     }
 }
 

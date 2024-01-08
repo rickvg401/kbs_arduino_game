@@ -6,7 +6,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_ILI9341.h>
 #include <EEPROM.h>
-#include "Adafruit_STMPE610.h"
+#include <Adafruit_FT6206.h>
 #include <util/delay.h>
 #include <sound.h>
 #include <notes.h>
@@ -30,6 +30,10 @@ uint8_t address2 = 0b1101;
 // unsigned char buffer[4];// array to store arduino output
 uint8_t NunChuckPosition[4];
 bool NunChuckPositionDivided = false;
+
+// Touch screen
+Adafruit_FT6206 ctp = Adafruit_FT6206();
+
 
 /*display*/
 #define TFT_DC 9
@@ -873,6 +877,11 @@ uint16_t* vectorToXY(uint16_t xb,uint16_t yb,uint16_t* vector){
   return xy ;
 }
 
+uint32_t map(uint32_t x, uint32_t in_min, uint32_t in_max, uint32_t out_min, uint32_t out_max)
+{
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
 void movePlayerNunchuk(uint8_t playerIndex){
 
     
@@ -1057,16 +1066,18 @@ void moveOverIR(uint8_t playerIndex)
 
 int main(void)
 {
-  extern screens cScreen; // current screen // extern variable in header file gives linker error, this works, not ideal...
-  extern screens nScreen; // new screen
-
-  actions action = NO_ACTION;
-  uint16_t touchX, touchY;
-
-  if(!setupDisplay()) return 1;
-
+  Serial.begin(9600);
   Wire.begin();
   sei();
+  extern screens cScreen; // current screen // extern variable in header file gives linker error, this works, not ideal...
+  extern screens nScreen; // new screen
+  extern uint32_t touchX;
+  extern uint32_t touchY;
+  actions action = NO_ACTION;
+
+  if(!setupDisplay()) { return 1; }
+  if (!ctp.begin(40, &Wire)) { return 1; }
+
   if(!Nunchuk.begin(nunchuk_ID))
   {
       tft.fillScreen(ILI9341_BLACK);
@@ -1085,6 +1096,12 @@ int main(void)
     {
       action = NEXTBUTTON;
       while(NunChuckPosition[2]){getNunchukPosition();} // wait for c release, otherwise too fast
+    } else if (ctp.touched())
+    {
+      TS_Point p = ctp.getPoint();
+      touchX = 320 - p.y;
+      touchY = p.x;
+      action = TOUCH;
     }
 
     switch (nScreen)
