@@ -1261,8 +1261,8 @@ int main(void)
  
 
 
-    drawLevel();
-    setupScoreBoardVS();
+    // drawLevel();
+    // setupScoreBoardVS();
     
     
     // drawLevel();
@@ -1301,14 +1301,16 @@ int main(void)
     tft.setTextSize(1);
     tft.setCursor(180,120);
     tft.fillRect(180,120, 50,25,TFT_BLACK);
-    tft.println("Ghost");  
+    tft.println("Ghost");
+    buffer = 0;  
   }
   if(buffer == 51){
     tft.setTextColor(TFT_WHITE);
     tft.setTextSize(1);
     tft.setCursor(180,120);
     tft.fillRect(180,120, 50,25,TFT_BLACK);
-    tft.println("PacMan");  
+    tft.println("PacMan"); 
+    buffer = 0; 
   }
 // character selection /////////////////////////////////////////
 
