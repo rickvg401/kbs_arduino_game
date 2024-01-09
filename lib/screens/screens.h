@@ -17,6 +17,7 @@ struct buttons
     uint16_t x, y, width, height;
     uint8_t textOffsetX, textOffsetY;
     const char* text;
+    uint8_t textSize;
     uint16_t textColor;
     uint16_t backgroundColor;
     void (*action)();

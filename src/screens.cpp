@@ -9,7 +9,7 @@ uint32_t touchY = 0;
 
 
 // general buttons
-buttons BTNreturn{0, 0, 40, 40, 5, 11, "<-", ILI9341_WHITE, ILI9341_RED, []()-> void 
+buttons BTNreturn{0, 0, 40, 40, 5, 11, "<-", 2, ILI9341_WHITE, ILI9341_RED, []()-> void 
 {
     switch(nScreen)
     {
@@ -28,29 +28,29 @@ buttons BTNreturn{0, 0, 40, 40, 5, 11, "<-", ILI9341_WHITE, ILI9341_RED, []()-> 
 }};
 
 // loading screen buttons
-buttons BTNpressTooStart{60, 200, 200, 40, 15, 5, "press to start", ILI9341_BLACK, ILI9341_BLUE, []() -> void 
+buttons BTNpressTooStart{60, 200, 200, 40, 15, 5, "press to start", 2, ILI9341_BLACK, ILI9341_BLUE, []() -> void 
 {
     nScreen = MENU_SCREEN;
 }};
 
 // menu screen buttons
-buttons BTNselectLevels{20, 60, 180, 40, 5, 10, "Select levels", ILI9341_WHITE, ILI9341_BLACK, []() -> void
+buttons BTNselectLevels{20, 60, 180, 40, 5, 10, "Select levels", 2, ILI9341_WHITE, ILI9341_BLACK, []() -> void
 {
     nScreen = LEVEL_SCREEN;
 }};
 
-buttons BTNseeHighscores{20, 120, 180, 40, 5, 10, "See highscores", ILI9341_WHITE, ILI9341_BLACK, []() -> void
+buttons BTNseeHighscores{20, 120, 180, 40, 5, 10, "See highscores", 2, ILI9341_WHITE, ILI9341_BLACK, []() -> void
 {
     nScreen = HIGHSCORE_SCREEN;
 }};
 
 // level screen buttons
-buttons BTNlvl1{20, 60, 50, 50, 10, 10, "1", ILI9341_WHITE, ILI9341_BLACK, []()->void{
+buttons BTNlvl1{20, 60, 50, 50, 10, 10, "1", 2, ILI9341_WHITE, ILI9341_BLACK, []()->void{
     // start level 1
     selectLevel(0);
     switchControlState(_GAME);
 }};
-buttons BTNlvl2{80, 60, 50, 50, 10, 10, "2", ILI9341_WHITE, ILI9341_BLACK, []()->void{
+buttons BTNlvl2{80, 60, 50, 50, 10, 10, "2", 2, ILI9341_WHITE, ILI9341_BLACK, []()->void{
     // start level 2
     selectLevel(1);
     switchControlState(_GAME);
@@ -79,6 +79,7 @@ bool inBound(buttons b)
 
 void drawButton(Adafruit_ILI9341 &tft, buttons b)
 {
+    tft.setTextSize((uint8_t) b.textSize);
     tft.fillRect(b.x, b.y, b.width, b.height, b.backgroundColor);
     tft.setCursor(b.x + b.textOffsetX, b.y + b.textOffsetY);
     tft.setTextColor(b.textColor);
@@ -133,7 +134,6 @@ void initMenuScreen(Adafruit_ILI9341 &tft)
 {
     globalInit(tft);
     tft.fillScreen(ILI9341_CYAN);
-    tft.setTextSize
     drawButtons(tft, menuScreenButtons, menuScreenButtonsSize);
 }
 
