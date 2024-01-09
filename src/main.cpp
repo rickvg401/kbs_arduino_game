@@ -90,6 +90,9 @@ volatile uint8_t eenofnull = 2;
 volatile uint16_t counter = 0;
 volatile uint16_t counter69 = 0;
 
+// map character selection variables
+bool GhostOfPacman = false; // bool for pacman or ghost
+uint8_t lastButtonState = 0;    // previous state of the button for detecting button push once, and so it will not spam clicks
 
 // ir 
 volatile bool logicalone = false;
@@ -1102,6 +1105,19 @@ void printbits(uint8_t byte)
   Serial.println(" ");
   
 }
+
+void selectscherm()
+{
+  tft.fillScreen(BACKGROUND);
+  tft.setCursor(50,65);
+  tft.setTextColor(TFT_PURPLE);
+  tft.setTextSize(3);
+  tft.println("P1");
+
+  tft.setCursor(180,65);
+  tft.println("P2");
+
+}
 int main(void)
 {
     pacmanTheme.frequencies = notes::pacmanNotes;
@@ -1134,30 +1150,73 @@ int main(void)
 
  
 
-
-    drawLevel();
-
+    
+    
+    // drawLevel();
+    selectscherm();
     // Serial.print()
     while(1)
     {
         getNunchukPosition();
-        sendCommand(nunchuckWrap(), encodeGridPosition(players[0]));
-        moveOverIR(1);
-        //  Serial.print("buffer - >>>>>>>>>>>>>>>>>>");
-        // Serial.println(buffer);
+// character selection /////////////////////////////////////////
+        if (NunChuckPosition[2] != lastButtonState)
+        {
+          tft.setTextColor(TFT_WHITE);
+          tft.setTextSize(1);
+          
+          if (!NunChuckPosition[2])
+          {
+            tft.setCursor(50, 120);
+            tft.fillRect(50, 120, 50, 25, TFT_BLACK);
+            if (GhostOfPacman)
+            {
+              tft.println("Ghost");
+              GhostOfPacman = !GhostOfPacman;
+              sendCommand(0b00000000, 0b11001100);
+            }
+            else
+            {
+              tft.println("PacMan");
+              GhostOfPacman = !GhostOfPacman;
+              sendCommand(0b00000000, 0b00110011);
+            }
+          }
+        }
+  lastButtonState = NunChuckPosition[2];
+  if(buffer == 204){
+    tft.setTextColor(TFT_WHITE);
+    tft.setTextSize(1);
+    tft.setCursor(180,120);
+    tft.fillRect(180,120, 50,25,TFT_BLACK);
+    tft.println("Ghost");  
+  }
+  if(buffer == 51){
+    tft.setTextColor(TFT_WHITE);
+    tft.setTextSize(1);
+    tft.setCursor(180,120);
+    tft.fillRect(180,120, 50,25,TFT_BLACK);
+    tft.println("PacMan");  
+  }
+// character selection /////////////////////////////////////////
+
+
+        // sendCommand(nunchuckWrap(), encodeGridPosition(players[0]));
+        // moveOverIR(1);
+        // //  Serial.print("buffer - >>>>>>>>>>>>>>>>>>");
+        // // Serial.println(buffer);
 
        
 
-        // Serial.println(buffer);
-        // Serial.print("buffer data ----- >>>>>>> ");
-        // printbits(bufferdata);
+        // // Serial.println(buffer);
+        // // Serial.print("buffer data ----- >>>>>>> ");
+        // // printbits(bufferdata);
        
-        // Serial.print("encodegridposition->>>>>>>>>>>>>>>>>>>");
-        // Serial.println(encodeGridPosition(players[0]));
-        // printbits(55);
-        movePlayerNunchuk(playablePlayer);  
-        collision();
-        if(endGame()){Serial.println("game ended");break;}
+        // // Serial.print("encodegridposition->>>>>>>>>>>>>>>>>>>");
+        // // Serial.println(encodeGridPosition(players[0]));
+        // // printbits(55);
+        // movePlayerNunchuk(playablePlayer);  
+        // collision();
+        // if(endGame()){Serial.println("game ended");break;}
     } 
 
     HighScorePage();
