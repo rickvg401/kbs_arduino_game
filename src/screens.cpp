@@ -1,10 +1,12 @@
 #include <screens.h>
 #include <control.h>
+#include <score.h>
 
 screens nScreen = LOADING_SCREEN;
 screens cScreen = NO_SCREEN;
 uint32_t touchX = 0;
 uint32_t touchY = 0;
+
 
 // general buttons
 buttons BTNreturn{0, 0, 40, 40, 5, 11, "<-", ILI9341_WHITE, ILI9341_RED, []()-> void 
@@ -39,7 +41,7 @@ buttons BTNselectLevels{20, 60, 180, 40, 5, 10, "Select levels", ILI9341_WHITE, 
 
 buttons BTNseeHighscores{20, 120, 180, 40, 5, 10, "See highscores", ILI9341_WHITE, ILI9341_BLACK, []() -> void
 {
-    // show highscore
+    nScreen = HIGHSCORE_SCREEN;
 }};
 
 // level screen buttons
@@ -58,11 +60,13 @@ buttons BTNlvl2{80, 60, 50, 50, 10, 10, "2", ILI9341_WHITE, ILI9341_BLACK, []()-
 buttons loadingScreenButtons[] = {BTNpressTooStart};
 buttons menuScreenButtons[] = {BTNreturn, BTNselectLevels, BTNseeHighscores};
 buttons levelScreenButtons[] = {BTNreturn, BTNlvl1, BTNlvl2};
+buttons scoreScreenButtons[] = {BTNreturn};
 
 // sizeof array
 uint8_t loadingScreenButtonsSize = sizeof(loadingScreenButtons) / sizeof(*loadingScreenButtons);
 uint8_t menuScreenButtonsSize = sizeof(menuScreenButtons) / sizeof(*menuScreenButtons);
 uint8_t levelScreenButtonSize = sizeof(levelScreenButtons) / sizeof(*levelScreenButtons);
+uint8_t scoreScreenButtonsSize = sizeof(scoreScreenButtons) / sizeof(*scoreScreenButtons);
 
 uint8_t activeButton;
 
@@ -118,10 +122,18 @@ void initLoadingScreen(Adafruit_ILI9341 &tft)
     drawButtons(tft, loadingScreenButtons, loadingScreenButtonsSize);
 }
 
+void initScoreScreen(Adafruit_ILI9341 &tft)
+{
+    globalInit(tft);
+    HighScorePage();
+    drawButtons(tft, scoreScreenButtons, menuScreenButtonsSize);
+}
+
 void initMenuScreen(Adafruit_ILI9341 &tft)
 {
     globalInit(tft);
     tft.fillScreen(ILI9341_CYAN);
+    tft.setTextSize
     drawButtons(tft, menuScreenButtons, menuScreenButtonsSize);
 }
 
@@ -211,4 +223,30 @@ void handleLevelScreen(Adafruit_ILI9341 &tft, actions action)
     }
 }
 
-
+void handleScoreScreen(Adafruit_ILI9341 &tft, actions action)
+{
+    switch (action)
+    {
+        case SELECTBUTTON:
+            scoreScreenButtons[activeButton%scoreScreenButtonsSize].action();
+            break;
+        case NEXTBUTTON:
+            activeButton++;
+            drawButtons(tft, scoreScreenButtons, scoreScreenButtonsSize);
+            break;
+        case TOUCH:
+            for (size_t i = 0; i < scoreScreenButtonsSize; i++)
+            {
+                if (inBound((buttons) scoreScreenButtons[i]))
+                {
+                    if (i == activeButton)
+                        ((buttons) scoreScreenButtons[i]).action();
+                    else
+                    {
+                        activeButton = i;
+                        drawButtons(tft, scoreScreenButtons, scoreScreenButtonsSize);
+                    }
+                }
+            }
+    } 
+}

@@ -12,6 +12,7 @@
 #include <notes.h>
 #include <screens.h>
 #include <control.h>
+#include <score.h>
 // #include "display/fonts/PressStart2P_vaV74pt7b.h"
 #include "display/fonts/PressStart2P_vaV74pt7b.h"
 //general
@@ -23,14 +24,14 @@
 
 int main(void)
 {
-    pacmanTheme.frequencies = notes::pacmanNotes;
-    pacmanTheme.durations = notes::pacmanDurations;
-    pacmanTheme.length = sizeof(notes::pacmanNotes) / sizeof(uint16_t);
-    setupBuzzer();
-    loadMusic(&pacmanTheme);
-    setVolume(100);
-    enableLoop();
-    playMusic();
+  pacmanTheme.frequencies = notes::pacmanNotes;
+  pacmanTheme.durations = notes::pacmanDurations;
+  pacmanTheme.length = sizeof(notes::pacmanNotes) / sizeof(uint16_t);
+  setupBuzzer();
+  loadMusic(&pacmanTheme);
+  setVolume(100);
+  enableLoop();
+  playMusic();
 
   sei();
   extern screens cScreen; // current screen // extern variable in header file gives linker error, this works, not ideal...
@@ -40,46 +41,32 @@ int main(void)
   actions action = NO_ACTION;
   
    
-    initIR();
-    Serial.begin(BAUDRATE);
-    Wire.begin();
+  initIR();
+  Serial.begin(BAUDRATE);
+  Wire.begin();
 
-    if(!setupDisplay()){return 0;}
-    if (!ctp.begin(40, &Wire)) { return 1; }
-  
-    uint8_t f = true;
-    while(!setupNunchuck())
+  if(!setupDisplay()){return 0;}
+  if (!ctp.begin(40, &Wire)) { return 1; }
+
+  uint8_t f = true;
+  while(!setupNunchuck())
+  {
+    if (f)
     {
-      if (f)
-      {
-        tft.fillScreen(ILI9341_BLACK);
-        tft.print("Please connect Nunchuk");
-        f = false;
-      }
+      tft.fillScreen(ILI9341_BLACK);
+      tft.print("Please connect Nunchuk");
+      f = false;
     }
-
-
-
-    // HighScorePage();
-    // _delay_ms(2000);
-
-   
-
-
-    // drawLevel();
-    // setupScoreBoardVS();
-    
-    
-    // drawLevel();
-
+  }
     selectLevel(0);
     switchControlState(_MENU);
-    // Serial.print()
+
     while(1)
     {
       getNunchukPosition();
       nunchuckWrap();
-      switch(controlState){
+      switch(controlState)
+      {
         case _GAME:
           sendCommand(nunchuckWrap(), nunchuckWrap());
 
@@ -142,10 +129,8 @@ int main(void)
             buffer = 0; 
           }
         // character selection /////////////////////////////////////////
-
         break;
       case _MENU:
-      
         // get events for screen
         if (NunChuckPosition[3]) // if Z is pressed. click button
         {
@@ -198,14 +183,25 @@ int main(void)
               handleLevelScreen(tft, action);
             }
             break;
+          case HIGHSCORE_SCREEN:
+            if (cScreen != nScreen)
+            {
+              initScoreScreen(tft);
+              cScreen = HIGHSCORE_SCREEN;
+            }
+            else
+            {
+              handleScoreScreen(tft, action);
+            }
+            break;
+
         }
         action = NO_ACTION;
-      break;   
+      break;
     } 
   }
-
-    HighScorePage();
-    return 0;
+  HighScorePage();
+  return 0;
 }
 
 

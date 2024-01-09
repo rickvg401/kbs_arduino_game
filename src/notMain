@@ -1,6 +1,8 @@
 // Level select
 extern ControlStates controlState;
 
+extern uint32_t scoreList [10];
+extern int posList[10];
 //serial
 #define SerialActive //if defined serial is active
 #define BAUDRATE 9600
@@ -26,9 +28,6 @@ Adafruit_FT6206 ctp = Adafruit_FT6206();
 #define TFT_CS 10
 #define HIGHSCORECOLOR ILI9341_YELLOW //color of highscore text
 #define PLAYERNAME "Jurre" //player name for adding highscores
-char nameList [10][6] = {}; //list to store playernames from EEPROM
-uint32_t scoreList [10] = {};//list to store scores from EEPROM
-int posList[10] = {0,1,2,3,4,5,6,7,8,9}; //list to keep track of indexes in EEPROM
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
 //game
@@ -341,12 +340,7 @@ void collectCoin(uint16_t playerIndex,uint16_t coinIndex){
   
 }
 
-
-
-
 void collectGhost(uint16_t playerIndex,uint16_t ghostIndex){
-
-
   // Serial.println("catched a ghost");
 
   switch (levelSelect)
@@ -1145,7 +1139,6 @@ void PCF8574_write(byte bytebuffer)
   Wire.endTransmission();
 }
 
-
 uint8_t nunchuckWrap(){
 
   nunchuckData = 0b0000;
@@ -1271,6 +1264,8 @@ void updateScore(uint16_t score){
     sprintf(printValue,"%04u",score);
     tft.println(printValue);
   }
+
+extern uint32_t scoreList[10];
 void getHighscore(){
   tft.fillRect(245,75,60,40,BACKGROUND);
   tft.setCursor(265,95);
@@ -1403,51 +1398,6 @@ void moveGhostOverIR(uint8_t ghostIndex)
     delete coordPtr;
 }
 
-
-//Highscore Page
-void printHighScore(char names[10][6],uint32_t scores[10]);
-void sort(char names[10][6],uint32_t scores[10], int pos[10]);
-void addScore(char name[6], uint32_t points);
-//function to call when going to highscore page
-void HighScorePage(){
-  setupHighScore();
-  getScore();
-  printHighScore(nameList,scoreList);
-}
-//clears the screen, sets the font and text color 
-bool setupHighScore(){
-  tft.fillScreen(BACKGROUND);
-  tft.setFont(&PressStart2P_vaV74pt7b);
-  tft.setTextColor(HIGHSCORECOLOR);
-  return 1;
-}
-//gets the EEPROM data, should only be called once every time the arduino starts up
-void getScore(){
-  char temp[6];
-  uint32_t temp2;
-  for(int i = 0;i<10;i++){
-    EEPROM.get(i*10,temp);
-    EEPROM.get(i*10+6,temp2);
-    for(int j = 0;j<6;j++){
-      nameList[i][j] = temp[j];
-    }
-    scoreList[i] = temp2;
-
-  }
-}
-
-//adds a new score to the EEPROM, also add it to scoreList and nameList so you dont have to read all the EEPROM data again
-void addScore(char name[6], uint32_t points){
-  if(points > scoreList[0]){
-    scoreList[0] = points;
-    for(int j = 0;j<6;j++){
-    nameList[0][j] = name[j];
-    EEPROM.put(posList[0]*10+j,name[j]);
-    }
-    EEPROM.put(posList[0]*10+6,points);
-  }  
-}
-
 void printbits(uint8_t byte)
 {
   for (int16_t i = 7; i >= 0; i--)
@@ -1464,9 +1414,6 @@ void printbits(uint8_t byte)
   
 }
 
-
-
-
 void selectscherm()
 {
   tft.fillScreen(BACKGROUND);
@@ -1474,7 +1421,6 @@ void selectscherm()
   tft.setTextColor(TFT_PURPLE);
   tft.setTextSize(3);
   tft.println("P1");
-
   tft.setCursor(180,65);
   tft.println("P2");
 

@@ -3,6 +3,7 @@
 
 #include <Adafruit_ILI9341.h>
 #include <stdint.h>
+#include <score.h>
 
 const uint16_t ACTIVE_BUTTON_COLOR = ILI9341_ORANGE;
 
@@ -24,9 +25,11 @@ struct buttons
 void initLoadingScreen(Adafruit_ILI9341 &);
 void initMenuScreen(Adafruit_ILI9341 &);
 void initLevelScreen(Adafruit_ILI9341 &);
+void initScoreScreen(Adafruit_ILI9341 &);
 
 void handleLoadingScreen(Adafruit_ILI9341 &, actions);
 void handleMenuScreen(Adafruit_ILI9341 &, actions);
 void handleLevelScreen(Adafruit_ILI9341 &, actions);
+void handleScoreScreen(Adafruit_ILI9341 &, actions);
 
 #endif // SCREEN_H
