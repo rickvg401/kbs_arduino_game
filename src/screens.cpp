@@ -45,11 +45,12 @@ buttons BTNseeHighscores{20, 120, 180, 40, 5, 10, "See highscores", ILI9341_WHIT
 // level screen buttons
 buttons BTNlvl1{20, 60, 50, 50, 10, 10, "1", ILI9341_WHITE, ILI9341_BLACK, []()->void{
     // start level 1
-    
+    selectLevel(0);
     switchControlState(_GAME);
 }};
 buttons BTNlvl2{80, 60, 50, 50, 10, 10, "2", ILI9341_WHITE, ILI9341_BLACK, []()->void{
     // start level 2
+    selectLevel(1);
     switchControlState(_GAME);
 }};
 
