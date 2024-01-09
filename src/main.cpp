@@ -11,6 +11,7 @@
 #include <sound.h>
 #include <notes.h>
 #include <screens.h>
+// #include "display/fonts/PressStart2P_vaV74pt7b.h"
 #include "display/fonts/PressStart2P_vaV74pt7b.h"
 
 
@@ -20,8 +21,8 @@
 #define _y_ 1
 
 //Level select
-enum ControlStates {_GAME,_MENU};
-ControlStates controlState = _MENU;
+enum ControlStates {_GAME,_MENU,_PLAYERMENU};
+ControlStates controlState = _PLAYERMENU;
 
 //serial
 #define SerialActive //if defined serial is active
@@ -1437,7 +1438,7 @@ void HighScorePage(){
 //clears the screen, sets the font and text color 
 bool setupHighScore(){
   tft.fillScreen(BACKGROUND);
-  tft.setFont(&PressStart2P_vaV76pt7b);
+  tft.setFont(&PressStart2P_vaV74pt7b);
   tft.setTextColor(HIGHSCORECOLOR);
   return 1;
 }
@@ -1453,65 +1454,6 @@ void getScore(){
     }
     scoreList[i] = temp2;
 
-  }
-
-  while (1)
-  {
-    // get events for screen
-    getNunchukPosition(); // Should be setNunchukPosition
-    if (NunChuckPosition[3]) // if Z is pressed. click button
-    {
-      action = SELECTBUTTON;
-    } else if (NunChuckPosition[2]) // if c is pressed. move to next button
-    {
-      action = NEXTBUTTON;
-      while(NunChuckPosition[2]){getNunchukPosition();} // wait for c release, otherwise too fast
-    } else if (ctp.touched())
-    {
-      TS_Point p = ctp.getPoint();
-      touchX = 320 - p.y;
-      touchY = p.x;
-      action = TOUCH;
-    }
-
-    switch (nScreen)
-    {
-      case LOADING_SCREEN:
-        if (cScreen != nScreen)
-        {
-          initLoadingScreen(tft);
-          cScreen = LOADING_SCREEN;
-        }
-        else
-        {
-          handleLoadingScreen(tft, action);
-        }
-        break;
-        
-      case MENU_SCREEN:
-        if (cScreen != nScreen)
-        {
-          initMenuScreen(tft);
-          cScreen = MENU_SCREEN;
-        } else
-        {
-          handleMenuScreen(tft, action);
-        }
-        break;
-
-      case LEVEL_SCREEN:
-        if (cScreen != nScreen)
-        {
-          initLevelScreen(tft);
-          cScreen = LEVEL_SCREEN;
-        }
-        else
-        {
-          handleLevelScreen(tft, action);
-        }
-        break;
-    }
-    action = NO_ACTION;
   }
 }
 
@@ -1590,16 +1532,16 @@ void switchControlState(ControlStates newControlState){
 
 int main(void)
 {
-    // pacmanTheme.frequencies = notes::pacmanNotes;
-    // pacmanTheme.durations = notes::pacmanDurations;
-    // pacmanTheme.length = sizeof(notes::pacmanNotes) / sizeof(uint16_t);
-    // setupBuzzer();
-    // loadMusic(&pacmanTheme);
-    // setVolume(100);
-    // enableLoop();
-    // playMusic();
+    pacmanTheme.frequencies = notes::pacmanNotes;
+    pacmanTheme.durations = notes::pacmanDurations;
+    pacmanTheme.length = sizeof(notes::pacmanNotes) / sizeof(uint16_t);
+    setupBuzzer();
+    loadMusic(&pacmanTheme);
+    setVolume(100);
+    enableLoop();
+    playMusic();
 
-   sei();
+  sei();
   extern screens cScreen; // current screen // extern variable in header file gives linker error, this works, not ideal...
   extern screens nScreen; // new screen
   extern uint32_t touchX;
@@ -1640,7 +1582,7 @@ int main(void)
     // drawLevel();
 
     selectLevel(0);
-    switchControlState(_GAME);
+    switchControlState(_MENU);
     // Serial.print()
     while(1)
     {
@@ -1667,7 +1609,7 @@ int main(void)
           collision();
           if(endGame()){switchControlState(_MENU);}
           break;
-        case _MENU:
+        case _PLAYERMENU:
           // character selection /////////////////////////////////////////
           if (NunChuckPosition[2] != lastButtonState)
           {
@@ -1711,10 +1653,67 @@ int main(void)
           }
         // character selection /////////////////////////////////////////
 
-      }
-        
-    // Serial.println(NunChuckPosition[1]);
+        break;
+      case _MENU:
+      
+        // get events for screen
+        getNunchukPosition(); // Should be setNunchukPosition
+        if (NunChuckPosition[3]) // if Z is pressed. click button
+        {
+          action = SELECTBUTTON;
+        } else if (NunChuckPosition[2]) // if c is pressed. move to next button
+        {
+          action = NEXTBUTTON;
+          while(NunChuckPosition[2]){getNunchukPosition();} // wait for c release, otherwise too fast
+        } else if (ctp.touched())
+        {
+          TS_Point p = ctp.getPoint();
+          touchX = 320 - p.y;
+          touchY = p.x;
+          action = TOUCH;
+        }
+
+        switch (nScreen)
+        {
+          case LOADING_SCREEN:
+            if (cScreen != nScreen)
+            {
+              initLoadingScreen(tft);
+              cScreen = LOADING_SCREEN;
+            }
+            else
+            {
+              handleLoadingScreen(tft, action);
+            }
+            break;
+
+          case MENU_SCREEN:
+            if (cScreen != nScreen)
+            {
+              initMenuScreen(tft);
+              cScreen = MENU_SCREEN;
+            } else
+            {
+              handleMenuScreen(tft, action);
+            }
+            break;
+
+          case LEVEL_SCREEN:
+            if (cScreen != nScreen)
+            {
+              initLevelScreen(tft);
+              cScreen = LEVEL_SCREEN;
+            }
+            else
+            {
+              handleLevelScreen(tft, action);
+            }
+            break;
+        }
+        action = NO_ACTION;
+      break;   
     } 
+  }
 
     HighScorePage();
     return 0;
