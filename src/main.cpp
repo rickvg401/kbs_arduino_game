@@ -11,7 +11,7 @@
 #include <sound.h>
 #include <notes.h>
 #include "display/fonts/PressStart2P_vaV74pt7b.h"
-
+// #include <avr/wdt.h>
 
 
 //general
@@ -58,7 +58,7 @@ uint8_t nunchuckData = 0b0000;
 //Scoreboard
 uint8_t lives = 3;
 uint16_t score = 0;
-
+uint32_t second = 0;
 //Level select
 enum Level {_GHOST,_1V1};
 Level lvl = _1V1;
@@ -154,6 +154,7 @@ void printHighScore(char names[10][6],uint32_t scores[10]);
 void sort(char names[10][6],uint32_t scores[10], int pos[10]);
 void addScore(char name[6], uint32_t points);
 
+void updateScore(uint16_t score);
 
 //game level
 const uint8_t COINS_LENGTH  = 7;
@@ -622,7 +623,26 @@ ISR(TIMER0_COMPA_vect)
   }
 }
 
+// void initWDT(){
+//   MCUSR &= ~(1<<WDRF);
+//   WDTCSR |= (1<<FUSE_WDTON);
+//   WDTCSR |= (1<<WDCE) | (1<<WDE);
+// // Set Watchdog settings:
+// WDTCSR = (1<<WDIE) | (0<<WDE) |
+// (0<<WDP3) | (1<<WDP2) | (1<<WDP1) |
+// (0<<WDP0);
+//   // Enable Watchdog interrupt, 1x per sec, disable reset
 
+// }
+// ISR(WDT_vect){
+//     score++;
+//     // updateScore(score);
+//      tft.fillRect(255,10,50,40,BACKGROUND);
+//     tft.setCursor(265,35);
+//     char printValue[10];
+//     sprintf(printValue,"%04u",score);
+//     tft.println(printValue);
+//   }
 void initIR()
 {
     DDRD |= (1<<DDD6); // ir led op gameshield
@@ -1246,7 +1266,8 @@ int main(void)
 
 
     drawLevel();
-    setupScoreBoardVS();
+    setupScoreBoardGhost();
+    //  initWDT();
     // Serial.print()
     while(1)
     {
