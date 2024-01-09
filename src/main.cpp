@@ -3,15 +3,15 @@
 #include <Arduino.h>
 #include <Nunchuk.h>
 #include "SPI.h"
-#include "display/Adafruit-GFX/Adafruit_GFX.h"
-#include "display/Adafruit_ILI9341.h"
+#include <Adafruit_GFX.h>
+#include <Adafruit_ILI9341.h>
 #include <EEPROM.h>
-#include "display/fonts/PressStart2P_vaV76pt7b.h"
+#include <Adafruit_FT6206.h>
 #include <util/delay.h>
 #include <sound.h>
 #include <notes.h>
+#include <screens.h>
 #include "display/fonts/PressStart2P_vaV74pt7b.h"
-
 
 
 //general
@@ -38,6 +38,10 @@ uint8_t address2 = 0b1101;
 // unsigned char buffer[4];// array to store arduino output
 uint8_t NunChuckPosition[4];
 bool NunChuckPositionDivided = false;
+
+// Touch screen
+Adafruit_FT6206 ctp = Adafruit_FT6206();
+
 
 /*display*/
 #define TFT_DC 9
@@ -895,14 +899,10 @@ bool setupDisplay(){
 bool setupNunchuck(){
     if(!Nunchuk.begin(nunchuk_ID)){
         #ifdef SerialActive
-        Serial.println("******** No nunchuk found");
-        Serial.flush();
         #endif
         return(false);
     }
     #ifdef SerialActive
-    Serial.print("-------- Nunchuk with Id: ");
-	Serial.println(Nunchuk.id);
     #endif
     return true;
 }
@@ -1014,6 +1014,7 @@ void movePlayerNunchuk(uint8_t playerIndex){
     
 
 }
+
 
 void moveGhostNunchuk(uint8_t ghostIndex){
     uint16_t newX;
@@ -1451,67 +1452,69 @@ void getScore(){
       nameList[i][j] = temp[j];
     }
     scoreList[i] = temp2;
-  }
-  sort(nameList,scoreList,posList);
-}
-//prints the highscores, uses the scoreList and nameList
-void printHighScore(char names[10][6],uint32_t scores[10]){
-  tft.fillScreen(BACKGROUND);
-  sort(nameList,scoreList,posList);
-  tft.setCursor(110,25);
-  tft.println("Highscore");
-  char bufHS[64];
-  char tempN[6];
-  long tempS;
-  for(int i = 9;i>=0;i--){
-    for(int j = 0;j<6;j++){
-      tempN[j] = names[i][j];
-    }
-    tempS = scoreList[i];
-    sprintf(bufHS,"%2i %-6s %10lu",10-i,tempN,tempS);
-    tft.setCursor(50,200-i*15);
-    tft.println(bufHS);
-  }
-}
-//sorts the highscores so that they get called in the correct order, uses insertion sort
-void sort(char names[10][6],uint32_t scores[10],int pos[10]){
-    char temp1[6] = {};
-    uint32_t temp2;
-    int temp3;
-    int j;
-    for(int p = 1;p< 10;p++){
-        for(int i = 0;i<6;i++){
-            temp1[i] = names[p][i];
-        }
-        temp2 = scores[p];
-        temp3 = posList[p];
-    for(j = p;j> 0 && temp2<scores[j-1];j--){
-        scores[j] = scores[j-1];
-        posList[j] = posList[j-1];
-    
-        for(int i = 0;i<6;i++){
-            names[j][i] = names[j-1][i];
-        }
-    }
-    scores[j] = temp2;
-    posList[j] = temp3;
-    for(int i = 0;i<6;i++){
-            names[j][i] = temp1[i];
-        }
-    }
 
   }
-//fills EEPROM with mock scores
-void setupScore(){
-  char names[10][6] = {"henk","kees","klaas","piet","jan","wilem","jurre","andor","rick","jay"};
-  uint32_t scores[10] ={1000000,1000,8000,4000,3000,6000,2000,7000,9000,5000};
-  for(int i = 0;i<10;i++){
-    for(int j = 0;j<6;j++){
-    EEPROM.put(i*10+j,names[i][j]);
+
+  while (1)
+  {
+    // get events for screen
+    getNunchukPosition(); // Should be setNunchukPosition
+    if (NunChuckPosition[3]) // if Z is pressed. click button
+    {
+      action = SELECTBUTTON;
+    } else if (NunChuckPosition[2]) // if c is pressed. move to next button
+    {
+      action = NEXTBUTTON;
+      while(NunChuckPosition[2]){getNunchukPosition();} // wait for c release, otherwise too fast
+    } else if (ctp.touched())
+    {
+      TS_Point p = ctp.getPoint();
+      touchX = 320 - p.y;
+      touchY = p.x;
+      action = TOUCH;
     }
-    EEPROM.put(i*10+6,scores[i]);
+
+    switch (nScreen)
+    {
+      case LOADING_SCREEN:
+        if (cScreen != nScreen)
+        {
+          initLoadingScreen(tft);
+          cScreen = LOADING_SCREEN;
+        }
+        else
+        {
+          handleLoadingScreen(tft, action);
+        }
+        break;
+        
+      case MENU_SCREEN:
+        if (cScreen != nScreen)
+        {
+          initMenuScreen(tft);
+          cScreen = MENU_SCREEN;
+        } else
+        {
+          handleMenuScreen(tft, action);
+        }
+        break;
+
+      case LEVEL_SCREEN:
+        if (cScreen != nScreen)
+        {
+          initLevelScreen(tft);
+          cScreen = LEVEL_SCREEN;
+        }
+        else
+        {
+          handleLevelScreen(tft, action);
+        }
+        break;
+    }
+    action = NO_ACTION;
   }
 }
+
 //adds a new score to the EEPROM, also add it to scoreList and nameList so you dont have to read all the EEPROM data again
 void addScore(char name[6], uint32_t points){
   if(points > scoreList[0]){
@@ -1596,13 +1599,21 @@ int main(void)
     // enableLoop();
     // playMusic();
 
-    sei();
+   sei();
+  extern screens cScreen; // current screen // extern variable in header file gives linker error, this works, not ideal...
+  extern screens nScreen; // new screen
+  extern uint32_t touchX;
+  extern uint32_t touchY;
+  actions action = NO_ACTION;
+  
+   
     initIR();
     Serial.begin(BAUDRATE);
     Wire.begin();
 
     if(!setupDisplay()){return 0;}
-    
+    if (!ctp.begin(40, &Wire)) { return 1; }
+  
     uint8_t f = true;
     while(!setupNunchuck())
     {
@@ -1708,4 +1719,5 @@ int main(void)
     HighScorePage();
     return 0;
 }
+
 
