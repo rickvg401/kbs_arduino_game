@@ -11,6 +11,7 @@
 #include <sound.h>
 #include <notes.h>
 #include <screens.h>
+#include <control.h>
 // #include "display/fonts/PressStart2P_vaV74pt7b.h"
 #include "display/fonts/PressStart2P_vaV74pt7b.h"
 
@@ -20,9 +21,8 @@
 #define _x_ 0
 #define _y_ 1
 
-//Level select
-enum ControlStates {_GAME,_MENU,_PLAYERMENU};
-ControlStates controlState = _PLAYERMENU;
+// Level select
+extern ControlStates controlState;
 
 //serial
 #define SerialActive //if defined serial is active
@@ -179,7 +179,7 @@ void valuesVS();
 void valuesGhost();
 
 //game level
-uint8_t levelSelect = 0;
+extern uint8_t levelSelect;
 
 const uint8_t COINS_LENGTH  = 7;
 const uint8_t GHOSTS_LENGTH = 0;
@@ -1068,7 +1068,6 @@ void moveGhostNunchuk(uint8_t ghostIndex){
 }
 
 void selectLevel(uint8_t level){
-
   switch (level)
   {
   case 0:
@@ -1277,6 +1276,7 @@ void showLevel(){
   }
 }
 void textGhost(){
+  tft.setTextSize(1);
   tft.setTextColor(TFT_YELLOW);
   tft.setCursor(260,10);
   tft.println("SCORE");
@@ -1319,6 +1319,7 @@ void showLives(){
   }
 }
 void valuesGhost(){
+  tft.setTextSize(1);
   tft.setTextColor(TFT_WHITE);
   updateScore(0);
   getHighscore();
@@ -1333,6 +1334,7 @@ void setupScoreBoardGhost(){
 }
 //VS score bord functies
 void textVS(){
+  tft.setTextSize(1);
   tft.setTextColor(TFT_YELLOW);
   tft.setCursor(270,10);
   tft.println("P1");
@@ -1508,27 +1510,6 @@ void setupGame(){
   drawLevel();
 }
 
-void switchControlState(ControlStates newControlState){
-  if(newControlState == _GAME){
-    setupGame();
-    
-    switch (levelSelect)
-    {
-    case 0:
-      setupScoreBoardVS();
-      break;
-    
-    case 1:
-      setupScoreBoardGhost();
-      break;
-    }
-
-  }else if(newControlState == _MENU){
-    selectscherm();
-  }
-
-  controlState = newControlState;
-}
 
 int main(void)
 {
@@ -1590,7 +1571,6 @@ int main(void)
       nunchuckWrap();
       switch(controlState){
         case _GAME:
-          
           sendCommand(nunchuckWrap(), nunchuckWrap());
 
           if(IrIsGhost){
@@ -1657,7 +1637,6 @@ int main(void)
       case _MENU:
       
         // get events for screen
-        getNunchukPosition(); // Should be setNunchukPosition
         if (NunChuckPosition[3]) // if Z is pressed. click button
         {
           action = SELECTBUTTON;
