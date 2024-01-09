@@ -127,7 +127,7 @@ void initScoreScreen(Adafruit_ILI9341 &tft)
 {
     globalInit(tft);
     HighScorePage();
-    drawButtons(tft, scoreScreenButtons, menuScreenButtonsSize);
+    drawButtons(tft, scoreScreenButtons, scoreScreenButtonsSize);
 }
 
 void initMenuScreen(Adafruit_ILI9341 &tft)
@@ -248,5 +248,6 @@ void handleScoreScreen(Adafruit_ILI9341 &tft, actions action)
                     }
                 }
             }
+            break;
     } 
 }
