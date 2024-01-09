@@ -10,7 +10,7 @@
 #include <util/delay.h>
 #include <sound.h>
 #include <notes.h>
-
+#include "display/fonts/PressStart2P_vaV74pt7b.h"
 
 
 
@@ -59,6 +59,14 @@ bool noGhost = true;
 uint8_t nunchuckData = 0b0000;
 // uint16_t playerResult[] = {0,0,0,0,0,0,0,0,0,0,0,0,0};
 
+//Scoreboard
+uint8_t lives = 3;
+uint16_t score = 0;
+
+//Level select
+enum Level {_GHOST,_1V1};
+Level lvl = _1V1;
+
 const uint16_t FIELD_WIDTH = 16;
 const uint16_t FIELD_HEIGHT = 16; // could be uint8_t
 const uint8_t BLOCK_SIZE = 15;
@@ -94,6 +102,9 @@ volatile uint8_t eenofnull = 2;
 volatile uint16_t counter = 0;
 volatile uint16_t counter69 = 0;
 
+// map character selection variables
+bool GhostOfPacman = false; // bool for pacman or ghost
+uint8_t lastButtonState = 0;    // previous state of the button for detecting button push once, and so it will not spam clicks
 
 // ir 
 volatile bool logicalone = false;
@@ -115,6 +126,10 @@ volatile uint8_t bufferIndex = 0; // Huidige index in de buffer
 volatile uint16_t buffer = 0;
 volatile uint8_t bufferdata = 0; // buffer zonder address bits
 
+//synchroon bool
+volatile bool synchroon = 1;
+volatile uint16_t currentcountersynchroon = 0;
+volatile bool synchroniseer = 0;
 
 bool setupDisplay();
 bool setupNunchuck();
@@ -135,7 +150,7 @@ void drawPlayer(uint16_t color);
 void drawCoins();
 void drawGhosts();
 bool canWalk(uint8_t, uint8_t);
-
+void syncPlayerLocation(uint16_t* coordPtr, uint8_t playerIndex);
 //void setSurrounding(uint8_t, uint8_t);
 
 void HighScorePage();
@@ -760,22 +775,22 @@ ISR(INT0_vect)
      currentCounterValue = counter;
      pulseDuration = abs(currentCounterValue - prevCounterValue);
 
-     if(bufferIndex == 4)
+     if(bufferIndex == 12)
      {
       bufferIndex = 0;
      }
     if (pulseDuration > 290 && pulseDuration < 320)
     {
       end = 1;
-      bufferdata = buffer ;
-      
+      // bufferdata = buffer >> 4;
+      // buffer = buffer >> 4; // logical end
     }
 
-    if (pulseDuration > 260 && pulseDuration < 280) // 552 // 565
+    if (pulseDuration > 260 && pulseDuration < 280) 
     {
       end = 0;
       buffer = 0;
-      bufferIndex = 0;
+      bufferIndex = 0; // logical begin
       
     }
 
@@ -793,7 +808,7 @@ ISR(INT0_vect)
       bufferIndex++;
     }
 
- } else {
+  } else {
     
     // bij een neergaande flank onthouden counter van timer 1
     prevCounterValue = counter;
@@ -857,6 +872,16 @@ ISR(TIMER0_COMPA_vect)
     {
       TCCR0A &= ~(1 << COM0A0);
     }
+  }
+  if(synchroon)
+  {
+    currentcountersynchroon = counter69;
+    if(currentcountersynchroon > 5000)
+    {
+      synchroniseer = true;
+      synchroon = false;
+    }
+    
   }
 }
 
@@ -1197,17 +1222,18 @@ void sendByte(uint8_t byte, bool address)
 }
 
 
-void sendCommand(uint8_t address, uint8_t command)
+void sendCommand(uint8_t nunchukdata, uint8_t command)
 {
   sendBegin();
-  sendByte(address,true);
-  // sendByte(command,false);
+  // sendByte(nunchukdata,true);
+  sendByte(command,false);
   sendEnd();
 }
 
 
 void moveOverIR(uint8_t playerIndex)
 {
+
     uint16_t newX;
     uint16_t newY;
 
@@ -1224,23 +1250,131 @@ void moveOverIR(uint8_t playerIndex)
       break;
     } 
 
+  
+    // uint16_t newX = players[playerIndex][_x_];
+    // uint16_t newY = players[playerIndex][_y_];
 
-      if (bufferdata & (1 << 3)) // 1000 <--
-      {
-        newX += playerSpeed;
-      }
-      else if (bufferdata & (1 << 2)) // 0100 -->
-      {
-       newX-=playerSpeed;
-      }
-      else if (bufferdata & (1 << 1)) // 0010 v
-      {
-        newY+=playerSpeed;
-      }
-      else if (bufferdata == 1 ) // 0001 ^
-      {
-        newY-=playerSpeed;
-      }
+
+    //   if (bufferdata & (1 << 3)) // 1000 <--
+    //   {
+    //     newX += playerSpeed;
+    //   }
+    //   else if (bufferdata & (1 << 2)) // 0100 -->
+    //   {
+    //    newX-=playerSpeed;
+    //   }
+    //   else if (bufferdata & (1 << 1)) // 0010 v
+    //   {
+    //     newY+=playerSpeed;
+    //   }
+    //   else if (bufferdata == 1 ) // 0001 ^
+    //   {
+    //     newY-=playerSpeed;
+    //   }
+
+    // uint16_t* coordPtr = walkTo(players[playerIndex][_x_],players[playerIndex][_y_],newX,newY);
+    // movePlayer(playerIndex,coordPtr[0],coordPtr[1]);
+    // delete coordPtr;
+     if(buffer > 10 && buffer < 256 && synchroniseer){
+            syncPlayerLocation(decodeGridPosition(buffer), 1);
+            synchroon = true;
+        }
+}
+void syncPlayerLocation(uint16_t* coordPtr, uint8_t playerIndex)
+{
+  uint16_t* coordPtr2 = walkTo(players[playerIndex][_x_],players[playerIndex][_y_],coordPtr[_x_],coordPtr[_y_]);
+  movePlayer(playerIndex, coordPtr2[_x_], coordPtr2[_y_]);
+  delete coordPtr;
+  delete coordPtr2;
+}
+//Scoreboard page
+void showLevel(){
+  tft.fillRect(245,190,60,40,BACKGROUND);
+  if(lvl == _GHOST){
+    tft.setCursor(260,215);
+  tft.println("Ghost");
+  } else {
+    tft.setCursor(265,215);
+    tft.println("1v1");
+  }
+}
+void textGhost(){
+  tft.setTextColor(TFT_YELLOW);
+  tft.setCursor(260,10);
+  tft.println("SCORE");
+  tft.setCursor(245,70);
+  tft.println("HIGHSCORE");
+  tft.setCursor(260,130);
+  tft.println("LIVES");
+  tft.setCursor(260,190);
+  tft.println("LEVEL");
+}
+void updateScore(uint16_t score){
+    tft.fillRect(255,10,50,40,BACKGROUND);
+    tft.setCursor(265,35);
+    char printValue[10];
+    sprintf(printValue,"%04u",score);
+    tft.println(printValue);
+  }
+void getHighscore(){
+  tft.fillRect(245,75,60,40,BACKGROUND);
+  tft.setCursor(265,95);
+  char printValue[10];
+  sprintf(printValue,"%04lu",scoreList[9]);
+  tft.println(printValue);
+}
+void showLives(){
+  tft.fillRect(245,140,70,40,BACKGROUND);
+  for(int i = 0;i<lives;i++){
+    tft.fillCircle(260+i*20,160,8,TFT_RED);
+  }
+}
+void valuesGhost(){
+  tft.setTextColor(TFT_WHITE);
+  updateScore(0);
+  getHighscore();
+  showLives();
+  showLevel();
+}
+void setupScoreBoardGhost(){
+  tft.fillRect(240,0,80,240,BACKGROUND);
+  tft.setFont(&PressStart2P_vaV74pt7b);
+  textGhost();
+  valuesGhost();
+}
+//VS score bord functies
+void textVS(){
+  tft.setTextColor(TFT_YELLOW);
+  tft.setCursor(270,10);
+  tft.println("P1");
+  tft.setCursor(270,70);
+  tft.println("P2");
+  tft.setCursor(255,130);
+  tft.println("POINTS");
+  tft.setCursor(260,190);
+  tft.println("LEVEL");
+}
+void updateP1(uint8_t points){
+  tft.setCursor(270,35);
+  char printValue[2];
+  sprintf(printValue,"%02i",points);
+  tft.println(printValue);
+
+
+}
+void updateP2(uint8_t points){
+  tft.setCursor(270,95);
+  char printValue[2];
+  sprintf(printValue,"%02i",points);
+  tft.println(printValue);
+
+}
+void updateTT(uint8_t points){
+  tft.setCursor(270,155);
+  char printValue[2];
+  sprintf(printValue,"%02i",points);
+  tft.println(printValue);
+
 
     uint16_t* coordPtr = NULL;
     switch (levelSelect)
@@ -1256,7 +1390,17 @@ void moveOverIR(uint8_t playerIndex)
     movePlayer(playerIndex,coordPtr[0],coordPtr[1]);
     delete coordPtr;
     
+
 }
+void valuesVS(){
+  tft.setTextColor(TFT_WHITE);
+  updateP1(0);
+  updateP2(0);
+  updateTT(0);
+  showLevel();
+}
+void setupScoreBoardVS(){
+
 
 void moveGhostOverIR(uint8_t ghostIndex)
 {
@@ -1308,9 +1452,15 @@ void moveGhostOverIR(uint8_t ghostIndex)
     moveGhost(ghostIndex,coordPtr[0],coordPtr[1],GHOST_COLOR);
     delete coordPtr;
     
+
+  tft.fillRect(240,0,80,240,BACKGROUND);
+  tft.setFont(&PressStart2P_vaV74pt7b);
+  textVS();
+  valuesVS();
 }
 
 
+//Highscore Page
 void printHighScore(char names[10][6],uint32_t scores[10]);
 void sort(char names[10][6],uint32_t scores[10], int pos[10]);
 void addScore(char name[6], uint32_t points);
@@ -1411,6 +1561,34 @@ void addScore(char name[6], uint32_t points){
   }  
 }
 
+void printbits(uint8_t byte)
+{
+  for (int16_t i = 7; i >= 0; i--)
+  {
+    if(byte & (1<<i))
+    {
+      Serial.print("1");
+    } else {
+      Serial.print("0");
+    }
+    
+  }
+  Serial.println(" ");
+  
+}
+
+void selectscherm()
+{
+  tft.fillScreen(BACKGROUND);
+  tft.setCursor(50,65);
+  tft.setTextColor(TFT_PURPLE);
+  tft.setTextSize(3);
+  tft.println("P1");
+
+  tft.setCursor(180,65);
+  tft.println("P2");
+
+}
 int main(void)
 {
     pacmanTheme.frequencies = notes::pacmanNotes;
@@ -1441,22 +1619,94 @@ int main(void)
     }
 
 
+
     // HighScorePage();
     // _delay_ms(2000);
 
     selectLevel(1);
     drawLevel();
 
+
+    // drawLevel();
+    // setupScoreBoardVS();
+    
+    
+    // drawLevel();
+    selectscherm();
     // Serial.print()
     while(1)
     {
         getNunchukPosition();
+
         sendCommand(nunchuckWrap(), nunchuckWrap());
         moveOverIR(1);
         // movePlayerNunchuk(playablePlayer);  
         moveGhostNunchuk(playableGhost);  
         collision();
         if(endGame()){Serial.println("game ended");break;}
+
+// character selection /////////////////////////////////////////
+        if (NunChuckPosition[2] != lastButtonState)
+        {
+          tft.setTextColor(TFT_WHITE);
+          tft.setTextSize(1);
+          
+          if (!NunChuckPosition[2])
+          {
+            tft.setCursor(50, 120);
+            tft.fillRect(50, 120, 50, 25, TFT_BLACK);
+            if (GhostOfPacman)
+            {
+              tft.println("Ghost");
+              GhostOfPacman = !GhostOfPacman;
+              sendCommand(0b00000000, 0b11001100);
+            }
+            else
+            {
+              tft.println("PacMan");
+              GhostOfPacman = !GhostOfPacman;
+              sendCommand(0b00000000, 0b00110011);
+            }
+          }
+        }
+  lastButtonState = NunChuckPosition[2];
+  if(buffer == 204){
+    tft.setTextColor(TFT_WHITE);
+    tft.setTextSize(1);
+    tft.setCursor(180,120);
+    tft.fillRect(180,120, 50,25,TFT_BLACK);
+    tft.println("Ghost");
+    buffer = 0;  
+  }
+  if(buffer == 51){
+    tft.setTextColor(TFT_WHITE);
+    tft.setTextSize(1);
+    tft.setCursor(180,120);
+    tft.fillRect(180,120, 50,25,TFT_BLACK);
+    tft.println("PacMan"); 
+    buffer = 0; 
+  }
+// character selection /////////////////////////////////////////
+
+
+        // sendCommand(nunchuckWrap(), encodeGridPosition(players[0]));
+        // moveOverIR(1);
+        // //  Serial.print("buffer - >>>>>>>>>>>>>>>>>>");
+        // // Serial.println(buffer);
+
+       
+
+        // // Serial.println(buffer);
+        // // Serial.print("buffer data ----- >>>>>>> ");
+        // // printbits(bufferdata);
+       
+        // // Serial.print("encodegridposition->>>>>>>>>>>>>>>>>>>");
+        // // Serial.println(encodeGridPosition(players[0]));
+        // // printbits(55);
+        // movePlayerNunchuk(playablePlayer);  
+        // collision();
+        // if(endGame()){Serial.println("game ended");break;}
+
     } 
 
     HighScorePage();
