@@ -10,7 +10,7 @@
 #include <util/delay.h>
 #include <sound.h>
 #include <notes.h>
-
+#include "display/fonts/PressStart2P_vaV74pt7b.h"
 
 
 
@@ -54,6 +54,14 @@ uint8_t playablePlayer = 0;
 // uint16_t* playerVector = NULL;
 uint8_t nunchuckData = 0b0000;
 // uint16_t playerResult[] = {0,0,0,0,0,0,0,0,0,0,0,0,0};
+
+//Scoreboard
+uint8_t lives = 3;
+uint16_t score = 0;
+
+//Level select
+enum Level {_GHOST,_1V1};
+Level lvl = _1V1;
 
 const uint16_t FIELD_WIDTH = 16;
 const uint16_t FIELD_HEIGHT = 16; // could be uint8_t
@@ -988,8 +996,110 @@ void syncPlayerLocation(uint16_t* coordPtr, uint8_t playerIndex)
   delete coordPtr;
   delete coordPtr2;
 }
+//Scoreboard page
+void showLevel(){
+  tft.fillRect(245,190,60,40,BACKGROUND);
+  if(lvl == _GHOST){
+    tft.setCursor(260,215);
+  tft.println("Ghost");
+  } else {
+    tft.setCursor(265,215);
+    tft.println("1v1");
+  }
+}
+void textGhost(){
+  tft.setTextColor(TFT_YELLOW);
+  tft.setCursor(260,10);
+  tft.println("SCORE");
+  tft.setCursor(245,70);
+  tft.println("HIGHSCORE");
+  tft.setCursor(260,130);
+  tft.println("LIVES");
+  tft.setCursor(260,190);
+  tft.println("LEVEL");
+}
+void updateScore(uint16_t score){
+    tft.fillRect(255,10,50,40,BACKGROUND);
+    tft.setCursor(265,35);
+    char printValue[10];
+    sprintf(printValue,"%04u",score);
+    tft.println(printValue);
+  }
+void getHighscore(){
+  tft.fillRect(245,75,60,40,BACKGROUND);
+  tft.setCursor(265,95);
+  char printValue[10];
+  sprintf(printValue,"%04lu",scoreList[9]);
+  tft.println(printValue);
+}
+void showLives(){
+  tft.fillRect(245,140,70,40,BACKGROUND);
+  for(int i = 0;i<lives;i++){
+    tft.fillCircle(260+i*20,160,8,TFT_RED);
+  }
+}
+void valuesGhost(){
+  tft.setTextColor(TFT_WHITE);
+  updateScore(0);
+  getHighscore();
+  showLives();
+  showLevel();
+}
+void setupScoreBoardGhost(){
+  tft.fillRect(240,0,80,240,BACKGROUND);
+  tft.setFont(&PressStart2P_vaV74pt7b);
+  textGhost();
+  valuesGhost();
+}
+//VS score bord functies
+void textVS(){
+  tft.setTextColor(TFT_YELLOW);
+  tft.setCursor(270,10);
+  tft.println("P1");
+  tft.setCursor(270,70);
+  tft.println("P2");
+  tft.setCursor(255,130);
+  tft.println("POINTS");
+  tft.setCursor(260,190);
+  tft.println("LEVEL");
+}
+void updateP1(uint8_t points){
+  tft.setCursor(270,35);
+  char printValue[2];
+  sprintf(printValue,"%02i",points);
+  tft.println(printValue);
 
+}
+void updateP2(uint8_t points){
+  tft.setCursor(270,95);
+  char printValue[2];
+  sprintf(printValue,"%02i",points);
+  tft.println(printValue);
 
+}
+void updateTT(uint8_t points){
+  tft.setCursor(270,155);
+  char printValue[2];
+  sprintf(printValue,"%02i",points);
+  tft.println(printValue);
+
+}
+void valuesVS(){
+  tft.setTextColor(TFT_WHITE);
+  updateP1(0);
+  updateP2(0);
+  updateTT(0);
+  showLevel();
+}
+void setupScoreBoardVS(){
+
+  tft.fillRect(240,0,80,240,BACKGROUND);
+  tft.setFont(&PressStart2P_vaV74pt7b);
+  textVS();
+  valuesVS();
+}
+
+//Highscore Page
 void printHighScore(char names[10][6],uint32_t scores[10]);
 void sort(char names[10][6],uint32_t scores[10], int pos[10]);
 void addScore(char name[6], uint32_t points);
@@ -1150,6 +1260,9 @@ int main(void)
 
  
 
+
+    drawLevel();
+    setupScoreBoardVS();
     
     
     // drawLevel();
