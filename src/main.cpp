@@ -325,8 +325,6 @@ uint8_t encodeGridPosition(uint16_t* coords){//max 16x16 grid with 8bits
   uint8_t coordX =  coords[_x_] / BLOCK_SIZE;
   uint8_t coordy =  coords[_y_] / BLOCK_SIZE;
 
-  
-
   //4bit x pos , 4bit y pos
   uint8_t gridpos = (coordX << 4)|(coordy & 0xF);
 
@@ -343,19 +341,19 @@ uint16_t* decodeGridPosition(uint8_t gridpos){//max 16x16 grid with 8bits
 }
 
 void collectCoin(uint16_t playerIndex,uint16_t coinIndex){
-  // Serial.print("collect coin");
+  Serial.print("collect coin");
   switch (levelSelect)
   {
   case 0:
-    playerResult[playerIndex]+=10;
+    // playerResult[playerIndex]+=10;
     coinsCatched[coinIndex] = true;
-    valuesVS();
+    // valuesVS();
     break;
   
-  // case 1:
-  //   playerResult2[playerIndex]+=10;
-  //   coinsCatched2[coinIndex] = true;
-  //   break;
+  case 1:
+    // playerResult2[playerIndex]+=10;
+    coinsCatched2[coinIndex] = true;
+    break;
   }
   
   
@@ -367,7 +365,7 @@ void collectCoin(uint16_t playerIndex,uint16_t coinIndex){
 void collectGhost(uint16_t playerIndex,uint16_t ghostIndex){
 
 
-  Serial.println("catched a ghost");
+  // Serial.println("catched a ghost");
 
   switch (levelSelect)
   {
@@ -461,7 +459,6 @@ void collision(){
 
 
     }
-
     break;
   
   case 1:
@@ -652,9 +649,6 @@ bool isNotWall(uint8_t x, uint8_t y)
 }
 
 float revRound(float x){
-  int c = ceil(x);
-  int f = floor(x);
-
   float dec = x-((int)(x));//only decimals //define sepperate 
   float newX = x;
 
@@ -664,12 +658,6 @@ float revRound(float x){
     newX = ceil(x);
   }
   
-  // Serial.print("RR:");
-  // Serial.print(dec);
-  // Serial.print(":");
-  // Serial.print(x);
-  // Serial.print("*");
-  // Serial.print(newX);
   
 
   return newX;
@@ -688,67 +676,8 @@ uint16_t* walkTo(uint16_t xFrom, uint16_t yFrom,uint16_t xTo,uint16_t yTo){
   int xg_m = revRound(xg);//main x
   int yg_m = revRound(yg);//main y
 
-/*
-  // int xg_d = xg_m;//main down
-  // int yg_d = yg_m+1;//main down
-
-  // int xg_r = xg_m+1;//main right
-  // int yg_r = yg_m;//main right
-
-
-  // int xg_rd = xg_r;//main right down
-  // int yg_rd = yg_d;//main right down
-
-  // tft.width();
-  // Serial.print(xTo);
-  // Serial.print(":");
-  // Serial.print(yTo);
-
-  // Serial.print(" ");
-  // Serial.print(xg);
-  // Serial.print(":");
-  // Serial.print(yg);
-  
-
-  // Serial.print("=xg_m/");
-  // Serial.print(xg_m);
-  // Serial.print(":");
-  // Serial.print(yg_m);
-
-  // Serial.print("=xg_d/");
-  // Serial.print(xg_d);
-  // Serial.print(":");
-  // Serial.print(yg_d);
-
-  // Serial.print("=xg_r/");
-  // Serial.print(xg_r);
-  // Serial.print(":");
-  // Serial.print(yg_r);
-
-  // Serial.print("=xg_rd/");
-  // Serial.print(xg_rd);
-  // Serial.print(":");
-  // Serial.print(yg_rd);
-*/
-
   bool xgmb = getTileAt(xg_m,yg_m);
-  // Serial.print(xgmb);
 
-  // getTileAt(xg_d,yg_d);
-  // getTileAt(xg_r,yg_r);
-  // getTileAt(xg_rd,yg_rd);
-  
-  // getTileAt()
-  // uint16_t coords[2]= new uint16_t {100,230};
-  
-  // Serial.print("=snap/");
-  // Serial.print(xg_m*BLOCK_SIZE);
-  // Serial.print(":");
-  // Serial.print(yg_m*BLOCK_SIZE);
-
-  // xTo = xg_m*BLOCK_SIZE;//snap x
-  // yTo = yg_m*BLOCK_SIZE;//snap y
-  // if()
   coords[0] = xFrom;
   coords[1] = yFrom;
 
@@ -759,12 +688,7 @@ uint16_t* walkTo(uint16_t xFrom, uint16_t yFrom,uint16_t xTo,uint16_t yTo){
     coords[1] = yg_m*BLOCK_SIZE;
   }
 
-  
 
-  // coords[0] = xTo;
-  // coords[1] = yTo;
-  
-  // Serial.println(" ");
   return coords;
 }
 
@@ -1033,7 +957,7 @@ void movePlayer(uint8_t playerIndex,uint16_t newX,uint16_t newY){
 
 
 void movePlayerNunchuk(uint8_t playerIndex){
-    Serial.println(playerIndex);
+    // Serial.println(playerIndex);
     uint16_t newX;
     uint16_t newY;
 
@@ -1067,7 +991,7 @@ void movePlayerNunchuk(uint8_t playerIndex){
         newY-=playerSpeed;
       }
 
-  uint16_t* coordPtr = NULL;
+  uint16_t* coordPtr;// = NULL;
   switch (levelSelect)
     {
     case 0:
@@ -1125,7 +1049,7 @@ void moveGhostNunchuk(uint8_t ghostIndex){
         newY-=playerSpeed;
       }
 
-  uint16_t* coordPtr = NULL;
+  uint16_t* coordPtr;// = NULL;
   switch (levelSelect)
     {
     case 0:
@@ -1316,30 +1240,6 @@ void moveOverIR(uint8_t playerIndex)
     } 
 
   
-    // uint16_t newX = players[playerIndex][_x_];
-    // uint16_t newY = players[playerIndex][_y_];
-
-
-    //   if (bufferdata & (1 << 3)) // 1000 <--
-    //   {
-    //     newX += playerSpeed;
-    //   }
-    //   else if (bufferdata & (1 << 2)) // 0100 -->
-    //   {
-    //    newX-=playerSpeed;
-    //   }
-    //   else if (bufferdata & (1 << 1)) // 0010 v
-    //   {
-    //     newY+=playerSpeed;
-    //   }
-    //   else if (bufferdata == 1 ) // 0001 ^
-    //   {
-    //     newY-=playerSpeed;
-    //   }
-
-    // uint16_t* coordPtr = walkTo(players[playerIndex][_x_],players[playerIndex][_y_],newX,newY);
-    // movePlayer(playerIndex,coordPtr[0],coordPtr[1]);
-    // delete coordPtr;
     if(buffer > 10 && buffer < 256 && synchroniseer){
           syncPlayerLocation(decodeGridPosition(buffer), 1);
           synchroon = true;
@@ -1347,7 +1247,7 @@ void moveOverIR(uint8_t playerIndex)
 }
 void syncPlayerLocation(uint16_t* coordPtr, uint8_t playerIndex)
 {
-  uint16_t* coordPtr2 = NULL;
+  uint16_t* coordPtr2;// = NULL;
   switch (levelSelect)
   {
   case 0:
@@ -1464,17 +1364,19 @@ void updateTT(uint8_t points){
 }
 void valuesVS(){
   tft.setTextColor(TFT_WHITE);
-  switch (levelSelect)
-  {
-  case 0:
-    updateP1(playerResult[0]);
-    updateP2(playerResult[1]);
-    break;
-  case 1:
-    updateP1(playerResult2[0]);
-    updateP2(playerResult2[1]);
-    break;
-  }
+  updateP1(0);
+  updateP2(0);
+  // switch (levelSelect)
+  // {
+  // case 0:
+  //   updateP1(playerResult[0]);
+  //   updateP2(playerResult[1]);
+  //   break;
+  // case 1:
+  //   updateP1(playerResult2[0]);
+  //   updateP2(playerResult2[1]);
+  //   break;
+  // }
   
   // updateTT(0);
   showLevel();
@@ -1505,24 +1407,7 @@ void moveGhostOverIR(uint8_t ghostIndex)
     } 
 
 
-      // if (bufferdata & (1 << 3)) // 1000 <--
-      // {
-      //   newX += playerSpeed;
-      // }
-      // else if (bufferdata & (1 << 2)) // 0100 -->
-      // {
-      //  newX-=playerSpeed;
-      // }
-      // else if (bufferdata & (1 << 1)) // 0010 v
-      // {
-      //   newY+=playerSpeed;
-      // }
-      // else if (bufferdata == 1 ) // 0001 ^
-      // {
-      //   newY-=playerSpeed;
-      // }
-
-    uint16_t* coordPtr = NULL;
+    uint16_t* coordPtr;// = NULL;
     switch (levelSelect)
     {
       case 0:
@@ -1702,14 +1587,14 @@ void switchControlState(ControlStates newControlState){
 
 int main(void)
 {
-    pacmanTheme.frequencies = notes::pacmanNotes;
-    pacmanTheme.durations = notes::pacmanDurations;
-    pacmanTheme.length = sizeof(notes::pacmanNotes) / sizeof(uint16_t);
-    setupBuzzer();
-    loadMusic(&pacmanTheme);
-    setVolume(100);
-    enableLoop();
-    playMusic();
+    // pacmanTheme.frequencies = notes::pacmanNotes;
+    // pacmanTheme.durations = notes::pacmanDurations;
+    // pacmanTheme.length = sizeof(notes::pacmanNotes) / sizeof(uint16_t);
+    // setupBuzzer();
+    // loadMusic(&pacmanTheme);
+    // setVolume(100);
+    // enableLoop();
+    // playMusic();
 
     sei();
     initIR();
@@ -1749,6 +1634,7 @@ int main(void)
     while(1)
     {
       getNunchukPosition();
+      nunchuckWrap();
       switch(controlState){
         case _GAME:
           
