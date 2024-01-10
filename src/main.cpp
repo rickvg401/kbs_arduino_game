@@ -193,10 +193,9 @@ int main(void)
               runGame = true;
               switchControlState(_GAME);
               
-            }
-            lastButtonState2 = NunChuckPosition[3];
+            }  
           }
-        
+          lastButtonState2 = NunChuckPosition[3];
         
         
         break;

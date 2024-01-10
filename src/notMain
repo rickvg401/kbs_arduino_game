@@ -374,9 +374,7 @@ void collectGhost(uint16_t playerIndex,uint16_t ghostIndex){
 }
 
 void resetGame(){
-  Serial.print("set ");
-  Serial.print(lives);
-  Serial.println(" lives");
+
   switch (levelSelect)
   {
   case 0:
@@ -1075,21 +1073,21 @@ void selectLevel(uint8_t level){
     levelSelect = 0;
     noCoins = false;
     noGhost = true;
-    nunchukIsGhost = false;
-    IrIsGhost = false;
+    // nunchukIsGhost = false;
+    // IrIsGhost = false;
 
-    playerId = 0;
-    IrId = 1;
+    // playerId = 0;
+    // IrId = 1;
     break;
   case 1:
     levelSelect = 1;
     noCoins = true;
     noGhost = false;
-    nunchukIsGhost = false;
-    IrIsGhost = true;
+    // nunchukIsGhost = false;
+    // IrIsGhost = true;
 
-    playerId = 0;
-    IrId = 0;
+    // playerId = 0;
+    // IrId = 0;
     
     break;
   }
@@ -1393,6 +1391,25 @@ void setupScoreBoardVS(){
   textVS();
   valuesVS();
 }
+void syncGhostLocation(uint16_t* coordPtr, uint8_t ghostIndex)
+{
+  uint16_t* coordPtr2;// = NULL;
+  switch (levelSelect)
+  {
+  case 0:
+    coordPtr2 = walkTo(ghosts[ghostIndex][_x_],ghosts[ghostIndex][_y_],coordPtr[_x_],coordPtr[_y_]);
+    break;
+  
+  case 1:
+    coordPtr2 = walkTo(ghosts2[ghostIndex][_x_],ghosts2[ghostIndex][_y_],coordPtr[_x_],coordPtr[_y_]);
+    break;
+  }
+  
+  moveGhost(ghostIndex, coordPtr2[_x_], coordPtr2[_y_],GHOST_COLOR);
+  delete coordPtr;
+  delete coordPtr2;
+}
+
 
 void moveGhostOverIR(uint8_t ghostIndex)
 {
@@ -1411,21 +1428,11 @@ void moveGhostOverIR(uint8_t ghostIndex)
       newY = ghosts2[ghostIndex][_y_];
       break;
     } 
-
-
-    uint16_t* coordPtr;// = NULL;
-    switch (levelSelect)
-    {
-      case 0:
-        coordPtr = walkTo(ghosts[ghostIndex][_x_],ghosts[ghostIndex][_y_],newX,newY);
-        break;
-      
-      case 1:
-        coordPtr = walkTo(ghosts2[ghostIndex][_x_],ghosts2[ghostIndex][_y_],newX,newY);
-        break;
+  
+    if(buffer > 10 && buffer < 256 && synchroniseer){
+          syncGhostLocation(decodeGridPosition(buffer), 1);
+          synchroon = true;
     }
-    moveGhost(ghostIndex,coordPtr[0],coordPtr[1],GHOST_COLOR);
-    delete coordPtr;
 }
 
 void printbits(uint8_t byte)
