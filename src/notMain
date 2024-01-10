@@ -22,7 +22,8 @@ bool NunChuckPositionDivided = false;
 // Touch screen
 Adafruit_FT6206 ctp = Adafruit_FT6206();
 
-
+//Watchdog 
+bool inGhost = false;
 /*display*/
 #define TFT_DC 9
 #define TFT_CS 10
@@ -55,7 +56,7 @@ uint8_t nunchuckData = 0b0000;
 //Scoreboard
 uint8_t lives = 3;
 uint16_t score = 0;
-
+void updateScore(uint16_t score);
 
 
 const uint16_t FIELD_WIDTH = 16;
@@ -563,6 +564,7 @@ bool endGame(){
   
 
   if(!coinsExist || !ghostsExist || !livesExist){
+    inGhost == false;
     return true;
   }else{
     return false;
@@ -1245,6 +1247,32 @@ void syncPlayerLocation(uint16_t* coordPtr, uint8_t playerIndex)
   delete coordPtr;
   delete coordPtr2;
 }
+//Watchdogtimer
+void initWDT(){
+  MCUSR &= ~(1<<WDRF);
+  WDTCSR |= (1<<FUSE_WDTON);
+  WDTCSR |= (1<<WDCE) | (1<<WDE);
+// Set Watchdog settings:
+WDTCSR = (1<<WDIE) | (0<<WDE) |
+(0<<WDP3) | (1<<WDP2) | (1<<WDP1) |
+(0<<WDP0);
+  // Enable Watchdog interrupt, 1x per sec, disable reset
+
+}
+void outWDT(){
+  score = 0;
+  updateScore(score);
+}
+ISR(WDT_vect){
+  if(inGhost){
+    score++;
+    updateScore(score);
+  }
+  }
+
+
+
+
 //Scoreboard page
 void showLevel(){
   tft.fillRect(245,190,60,40,BACKGROUND);
@@ -1443,7 +1471,12 @@ void setupGame(){
   resetGame();
   setResetPosition();
   drawLevel();
-
   runGame = true;
+  if(levelSelect == 1){
+    inGhost == true;
+    score == 0;
+  } else {
+    inGhost == false;
+  }
 }
 
