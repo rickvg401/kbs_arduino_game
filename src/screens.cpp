@@ -134,7 +134,6 @@ void initMenuScreen(Adafruit_ILI9341 &tft)
 {
     globalInit(tft);
     tft.fillScreen(ILI9341_CYAN);
-    tft.setTextSize(1);
     drawButtons(tft, menuScreenButtons, menuScreenButtonsSize);
 }
 
