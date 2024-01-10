@@ -13,7 +13,7 @@
 #include <screens.h>
 #include <control.h>
 #include <score.h>
-// #include "display/fonts/PressStart2P_vaV74pt7b.h"
+#include "display/fonts/PressStart2P_vaV76pt7b.h"
 #include "display/fonts/PressStart2P_vaV74pt7b.h"
 //general
 #define F_CPU 16000000ul

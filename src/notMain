@@ -17,6 +17,7 @@ uint8_t address2 = 0b1101;
 
 // unsigned char buffer[4];// array to store arduino output
 uint8_t NunChuckPosition[4];
+uint8_t PrevNunChuckPosition[4];
 bool NunChuckPositionDivided = false;
 
 // Touch screen
@@ -27,7 +28,7 @@ Adafruit_FT6206 ctp = Adafruit_FT6206();
 #define TFT_DC 9
 #define TFT_CS 10
 #define HIGHSCORECOLOR ILI9341_YELLOW //color of highscore text
-#define PLAYERNAME "Jurre" //player name for adding highscores
+#define HIGHLIGHT 0x0861
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
 //game
@@ -56,7 +57,13 @@ uint8_t nunchuckData = 0b0000;
 uint8_t lives = 3;
 uint16_t score = 0;
 
-
+//New Highscore
+char letters[27] = {' ', 'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z'};
+char input[6] = "";
+uint8_t index[5] = {0,0,0,0,0};
+int idx = 0;
+bool filled = false;
+void newHighscore();
 
 const uint16_t FIELD_WIDTH = 16;
 const uint16_t FIELD_HEIGHT = 16; // could be uint8_t
@@ -555,6 +562,11 @@ bool endGame(){
     for(int p = 0;p<PLAYER_LENGTH2;p++){
       if(playerLives2[p]<=0){
         livesExist = false;
+      }
+    }
+    if(!coinsExist || !ghostsExist || !livesExist){
+      if(score > scoreList[0]){
+        newHighscore();
       }
     }
     break;
@@ -1373,6 +1385,111 @@ void setupScoreBoardVS(){
   tft.setFont(&PressStart2P_vaV74pt7b);
   textVS();
   valuesVS();
+}
+
+//new Highscore
+void printHeader(){
+    tft.setFont(&PressStart2P_vaV74pt7b);
+    tft.setTextSize(2);
+    tft.setCursor(50,20);
+    tft.println("NEW HIGHSCORE!");
+    tft.setTextSize(1);
+    tft.setCursor(90,35);
+    tft.println("Fill in your name");
+    tft.setFont(&PressStart2P_vaV76pt7b);
+}
+void printName(){
+    tft.fillRect(115,105,80,30,BACKGROUND);
+    tft.setTextSize(1);
+    tft.setCursor(200,120);
+    tft.println("CONFIRM");
+    for(int i = 0;i<5;i++){
+        tft.fillRect(118+15*i,107,14,14,HIGHLIGHT);
+        tft.setCursor(120+15*i,120);
+        tft.print(letters[index[i]]);
+        if(i == idx){
+            tft.setCursor(120+15*i,121);
+            tft.println("_");
+        }
+    }
+}
+bool naaminvullen(){
+    tft.drawLine(200,121,282,121,TFT_YELLOW);
+    while(idx == 5){
+        getNunchukPosition();
+        if(NunChuckPosition[3] == 1 && PrevNunChuckPosition[3] == 0){
+
+            tft.drawLine(200,121,282,121,BACKGROUND);
+            return true;
+    } else if(NunChuckPosition[2] == 1 && PrevNunChuckPosition[2] == 0){
+        idx = 0;
+        for(int i = 0;i<5;i++){
+            index[i] = 0;
+            input[i] = ' ';
+        }
+        addScore(input,score);
+        return true;
+    }
+    for(int i = 0; i<4;i++){
+        PrevNunChuckPosition[i] = NunChuckPosition[i];
+    }
+    }
+}
+void inputLetters(){
+    if(NunChuckPosition[3] == 1 && PrevNunChuckPosition[3] == 0){
+        if(idx > 0){
+            idx--;
+        } else {
+            idx = 0;
+        }
+        printName();
+    } 
+    if(NunChuckPosition[1] > 128 && PrevNunChuckPosition[1] == 128){
+        if(index[idx] < 26){
+            index[idx]++;
+        } else {
+            index[idx] = 0;
+        }
+        printName();
+    } else if(NunChuckPosition[1] < 128 && PrevNunChuckPosition[1] == 128){
+        if(index[idx] > 0){
+            index[idx]--;
+        } else {
+            index[idx] = 26;
+        }
+        printName();
+    } 
+    if(NunChuckPosition[2] == 1 && PrevNunChuckPosition[2] == 0){
+        if(idx < 5){
+            idx++;
+            printName();
+        }
+        if(idx == 5){
+            for(int i = 0; i<4;i++){
+        PrevNunChuckPosition[i] = NunChuckPosition[i];
+    }
+            if(naaminvullen()){
+              filled = true;
+                return;
+            }
+        }
+    }
+    for(int i = 0; i<4;i++){
+        PrevNunChuckPosition[i] = NunChuckPosition[i];
+    }
+}
+void newHighscore(){
+    tft.fillScreen(BACKGROUND);
+    tft.setFont(&PressStart2P_vaV76pt7b);
+    tft.setTextColor(TFT_YELLOW);
+    printHeader();
+    printName();
+    filled = false;
+    while(!filled){
+        getNunchukPosition();
+        inputLetters();
+    }
+    score = 0;
 }
 
 void moveGhostOverIR(uint8_t ghostIndex)
