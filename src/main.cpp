@@ -120,12 +120,16 @@ int main(void)
               {
                 tft.println("Ghost");
                 GhostOfPacman = !GhostOfPacman;
+                nunchukIsGhost = true;
+                playerId = 0;
                 sendCommand(0b00000000, 0b11001100);
               }
               else
               {
                 tft.println("PacMan");
                 GhostOfPacman = !GhostOfPacman;
+                nunchukIsGhost = false;
+                playerId = 0;
                 sendCommand(0b00000000, 0b00110011);
               }
             }
@@ -138,6 +142,10 @@ int main(void)
             tft.fillRect(180,120, 50,25,TFT_BLACK);
             tft.println("Ghost");
             buffer = 0;  
+            IrIsGhost = true;
+            IrId = 0;
+            GhostOfPacmanIR = false;
+
           }
           if(buffer == 51){
             tft.setTextColor(TFT_WHITE);
@@ -146,10 +154,11 @@ int main(void)
             tft.fillRect(180,120, 50,25,TFT_BLACK);
             tft.println("PacMan");
             IrIsGhost = false;
-            IrId = 1;//players Id
+            IrId = 0;//players Id
             GhostOfPacmanIR = true; 
             buffer = 0; 
           }
+          
           if(nunchukIsGhost != IrIsGhost){  
             if(NunChuckPosition[3] !=lastButtonState2) // als de onderste knop op de nunchuk is ingedrukt
             {
@@ -172,11 +181,10 @@ int main(void)
 
               sendCommand(0b0, 0b11110000);
               runGame = true;
-              switchControlState(_GAME);
-              
+              switchControlState(_GAME); 
             }
-            lastButtonState2 = NunChuckPosition[3];
           }
+          lastButtonState2 = NunChuckPosition[3];
         break;
       case _MENU:
         // get events for screen

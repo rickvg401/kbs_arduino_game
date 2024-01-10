@@ -43,7 +43,7 @@ const uint8_t numPlayers = 2;
 uint8_t IrId = 1;
 uint8_t playerId = 0; 
 
-bool nunchukIsGhost = false;
+bool nunchukIsGhost = true;
 bool IrIsGhost = false;
 
 bool noCoins = true;
@@ -1057,21 +1057,21 @@ void selectLevel(uint8_t level){
     levelSelect = 0;
     noCoins = false;
     noGhost = true;
-    nunchukIsGhost = false;
-    IrIsGhost = false;
+    // nunchukIsGhost = false;
+    // IrIsGhost = false;
 
-    playerId = 0;
-    IrId = 1;
+    // playerId = 0;
+    // IrId = 1;
     break;
   case 1:
     levelSelect = 1;
     noCoins = true;
     noGhost = false;
-    nunchukIsGhost = false;
-    IrIsGhost = true;
+    // nunchukIsGhost = false;
+    // IrIsGhost = true;
 
-    playerId = 0;
-    IrId = 0;
+    // playerId = 0;
+    // IrId = 0;
     
     break;
   }

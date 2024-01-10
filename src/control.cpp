@@ -13,12 +13,13 @@ ControlStates controlState = _PLAYERMENU;
 
 void switchControlState(ControlStates newControlState){
   if(newControlState == _GAME){
-    setupGame();
+    
 
     switch (levelSelect)
     {
     case 0:
-      setupScoreBoardVS();
+      // setupScoreBoardVS();
+      setupGame();
       break;
 
         case 1:
