@@ -35,7 +35,7 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 const int GAMECLOCK = 15; //ball updates every x times per second
 // uint16_t playerPosX;
 // uint16_t playerPosY;
-
+bool runGame = false; 
 const uint8_t numPlayers = 2;
 // uint8_t playablePlayer = 0;
 // uint8_t playableGhost = 0;
@@ -95,8 +95,10 @@ volatile uint16_t counter69 = 0;
 
 // map character selection variables
 bool GhostOfPacman = false; // bool for pacman or ghost
+bool GhostOfPacmanIR = false;
+bool playerMenuSet = false;
 uint8_t lastButtonState = 0;    // previous state of the button for detecting button push once, and so it will not spam clicks
-
+uint8_t lastButtonState2 = 0;
 // ir 
 volatile bool logicalone = false;
 volatile bool logicalzero = false;
@@ -371,12 +373,22 @@ void collectGhost(uint16_t playerIndex,uint16_t ghostIndex){
   valuesGhost();
 }
 
-void setLives(){
+void resetGame(){
+  Serial.print("set ");
+  Serial.print(lives);
+  Serial.println(" lives");
   switch (levelSelect)
   {
   case 0:
     for(int l = 0; l<PLAYER_LENGTH;l++){
       playerLives[l] = lives;
+    }
+    for(int c = 0;c<COINS_LENGTH;c++){
+      coinsCatched[c] = false;
+    }
+    
+    for(int g = 0;g<GHOSTS_LENGTH;g++){
+      ghostsCatched[g] = false;
     }
     break;
   
@@ -384,10 +396,20 @@ void setLives(){
     for(int l = 0; l<PLAYER_LENGTH2;l++){
       playerLives2[l] = lives;
     }
+    for(int c = 0;c<COINS_LENGTH2;c++){
+      coinsCatched2[c] = false;
+    }
+    
+    for(int g = 0;g<GHOSTS_LENGTH2;g++){
+      ghostsCatched2[g] = false;
+    }
     break;
   }
   
 }
+
+
+
 
 void drawCoins(){
   switch (levelSelect)
@@ -469,6 +491,7 @@ void collision(){
 }
 
 bool endGame(){
+
   bool coinsExist = false;
   bool ghostsExist = false;
   bool livesExist = true;
@@ -545,6 +568,11 @@ bool endGame(){
   }
 
   
+  // Serial.print(!coinsExist);
+  // Serial.print(":");
+  // Serial.print(!ghostsExist);
+  // Serial.print(":");
+  // Serial.println(!livesExist);
 
   if(!coinsExist || !ghostsExist || !livesExist){
     return true;
@@ -929,6 +957,7 @@ void movePlayer(uint8_t playerIndex,uint16_t newX,uint16_t newY){
 
 
 void movePlayerNunchuk(uint8_t playerIndex){
+    Serial.println("move own player");
     // Serial.println(playerIndex);
     uint16_t newX;
     uint16_t newY;
@@ -980,11 +1009,16 @@ void movePlayerNunchuk(uint8_t playerIndex){
     movePlayer(playerIndex,coordPtr[0],coordPtr[1]);
     delete coordPtr;
     
+    
+
+    
+    
 
 }
 
 
 void moveGhostNunchuk(uint8_t ghostIndex){
+    Serial.println("move own ghost");
     uint16_t newX;
     uint16_t newY;
 
@@ -1189,7 +1223,7 @@ void sendCommand(uint8_t nunchukdata, uint8_t command)
 
 void moveOverIR(uint8_t playerIndex)
 {
-
+    Serial.println("move IR ghost");
     uint16_t newX;
     uint16_t newY;
 
@@ -1205,6 +1239,7 @@ void moveOverIR(uint8_t playerIndex)
       newY = players2[playerIndex][_y_];
       break;
     } 
+
   
     if(buffer > 10 && buffer < 256 && synchroniseer){
           syncPlayerLocation(decodeGridPosition(buffer), 1);
@@ -1349,7 +1384,7 @@ void valuesVS(){
   //   break;
   // }
   
-  // updateTT(0);
+  updateTT(0);
   showLevel();
 }
 void setupScoreBoardVS(){
@@ -1423,8 +1458,10 @@ void selectscherm()
 
 void setupGame(){
   selectLevel(levelSelect);
-  setLives();
+  resetGame();
   setResetPosition();
   drawLevel();
+
+  runGame = true;
 }
 
