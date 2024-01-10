@@ -980,10 +980,6 @@ void movePlayerNunchuk(uint8_t playerIndex){
     movePlayer(playerIndex,coordPtr[0],coordPtr[1]);
     delete coordPtr;
     
-    
-
-    
-    
 
 }
 
@@ -1209,7 +1205,6 @@ void moveOverIR(uint8_t playerIndex)
       newY = players2[playerIndex][_y_];
       break;
     } 
-
   
     if(buffer > 10 && buffer < 256 && synchroniseer){
           syncPlayerLocation(decodeGridPosition(buffer), 1);
