@@ -6,6 +6,7 @@ extern void setupScoreBoardVS();
 extern void setupScoreBoardGhost();
 extern void selectscherm();
 extern void selectLevel(uint8_t level);
+extern bool runGame;
 
 uint8_t levelSelect = 0;
 ControlStates controlState = _PLAYERMENU;
@@ -16,12 +17,19 @@ void switchControlState(ControlStates newControlState){
 
     switch (levelSelect)
     {
-    case -1:
+    case 0:
       setupScoreBoardVS();
       break;
 
-    case 0:
-      setupScoreBoardGhost();
+        case 1:
+      // switchControlState(_PLAYERMENU);
+      if(!runGame){
+        newControlState = _PLAYERMENU;
+        selectscherm();
+      }else{
+        setupGame();
+        setupScoreBoardGhost();
+      }
       break;
     }
   } else if(newControlState == _PLAYERMENU){
