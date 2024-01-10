@@ -42,6 +42,7 @@ int main(void)
   
    
   initIR();
+  initWDT();
   Serial.begin(BAUDRATE);
   Wire.begin();
 
