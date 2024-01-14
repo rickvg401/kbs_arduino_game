@@ -19,8 +19,8 @@ void switchControlState(ControlStates newControlState){
     switch (levelSelect)
     {
     case 0:
-      // setupScoreBoardVS();
       setupGame();
+      setupScoreBoardVS();
       break;
 
     case 1:

@@ -104,6 +104,7 @@ void drawButtons(Adafruit_ILI9341 &tft, buttons* bList, uint8_t bSize)
 void globalInit(Adafruit_ILI9341 &tft)
 {
     tft.setTextSize(2);
+    tft.setFont();
     activeButton = 1;
 }
 

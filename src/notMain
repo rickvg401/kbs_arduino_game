@@ -55,7 +55,7 @@ uint8_t nunchuckData = 0b0000;
 //Scoreboard
 uint8_t lives = 3;
 uint16_t score = 0;
-
+char printValue[2];
 
 
 const uint16_t FIELD_WIDTH = 16;
@@ -155,7 +155,7 @@ void sort(char names[10][6],uint32_t scores[10], int pos[10]);
 void addScore(char name[6], uint32_t points);
 void valuesVS();
 void valuesGhost();
-
+void winScreen();
 //game level
 extern uint8_t levelSelect;
 
@@ -328,9 +328,9 @@ void collectCoin(uint16_t playerIndex,uint16_t coinIndex){
   switch (levelSelect)
   {
   case 0:
-    // playerResult[playerIndex]+=10;
+    playerResult[playerIndex]+=1;
     coinsCatched[coinIndex] = true;
-    // valuesVS();
+    valuesVS();
     break;
   
   case 1:
@@ -573,6 +573,9 @@ bool endGame(){
   // Serial.println(!livesExist);
 
   if(!coinsExist || !ghostsExist || !livesExist){
+    if(levelSelect == 0){
+      winScreen();
+    }
     return true;
   }else{
     return false;
@@ -1348,44 +1351,32 @@ void textVS(){
   tft.println("LEVEL");
 }
 void updateP1(uint8_t points){
+  tft.fillRect(270,25,15,10,BACKGROUND);
   tft.setCursor(270,35);
-  char printValue[2];
   sprintf(printValue,"%02i",points);
   tft.println(printValue);
 
 
 }
 void updateP2(uint8_t points){
+  tft.fillRect(270,85,15,10,BACKGROUND);
   tft.setCursor(270,95);
-  char printValue[2];
   sprintf(printValue,"%02i",points);
   tft.println(printValue);
 
 }
 void updateTT(uint8_t points){
+  tft.fillRect(270,145,15,10,BACKGROUND);
   tft.setCursor(270,155);
-  char printValue[2];
   sprintf(printValue,"%02i",points);
   tft.println(printValue);
 }
 void valuesVS(){
   tft.setTextColor(TFT_WHITE);
-  updateP1(0);
-  updateP2(0);
-  // switch (levelSelect)
-  // {
-  // case 0:
-  //   updateP1(playerResult[0]);
-  //   updateP2(playerResult[1]);
-  //   break;
-  // case 1:
-  //   updateP1(playerResult2[0]);
-  //   updateP2(playerResult2[1]);
-  //   break;
-  // }
-  
-  updateTT(0);
-  showLevel();
+    updateP1(playerResult[0]);
+    updateP2(playerResult[1]);
+    updateTT(COINS_LENGTH-playerResult[0]-playerResult[1]);  
+    showLevel();
 }
 void setupScoreBoardVS(){
   tft.fillRect(240,0,80,240,BACKGROUND);
@@ -1473,4 +1464,16 @@ void setupGame(){
 
   runGame = true;
 }
-
+void winScreen(){
+  tft.fillScreen(BACKGROUND);
+  tft.setCursor(80,120);
+  tft.setTextSize(3);
+  if(playerResult[0] > playerResult[1]){
+    tft.println("P1 WINS");
+  } else {
+    tft.println("P2 WINS");
+  }
+  while(NunChuckPosition[2] == 0){
+    getNunchukPosition();
+  }
+}
