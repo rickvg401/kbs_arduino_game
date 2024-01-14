@@ -104,10 +104,14 @@ int main(void)
             }
           }
             
-          //  
+          if(buffer == 255){
+            runGame=false; switchControlState(_MENU);nScreen=LOADING_SCREEN;
+          }
+
+          //
           collision();
           // if(endGame()){switchControlState(_MENU);}
-          if(endGame()){runGame=false; switchControlState(_MENU);nScreen=LOADING_SCREEN;}
+          if(endGame()){runGame=false; switchControlState(_MENU);nScreen=LOADING_SCREEN; sendCommand(0b0, 0b11111111);}
           break;
         case _PLAYERMENU:
           if (NunChuckPosition[2] != lastButtonState)

@@ -1302,20 +1302,22 @@ void getHighscore(){
   tft.println(printValue);
 }
 void showLives(){
-  tft.fillRect(245,140,70,40,BACKGROUND);
-  switch (levelSelect)
-  {
-  case 0:
-    for(int i = 0;i<playerLives[playerId];i++){
-      tft.fillCircle(260+i*20,160,8,TFT_RED);
+  if(!nunchukIsGhost){
+    tft.fillRect(245,140,70,40,BACKGROUND);
+    switch (levelSelect)
+    {
+    case 0:
+      for(int i = 0;i<playerLives[playerId];i++){
+        tft.fillCircle(260+i*20,160,8,TFT_RED);
+      }
+      break;
+    
+    case 1:
+      for(int i = 0;i<playerLives2[playerId];i++){
+        tft.fillCircle(260+i*20,160,8,TFT_RED);
+      }
+      break;
     }
-    break;
-  
-  case 1:
-    for(int i = 0;i<playerLives2[playerId];i++){
-      tft.fillCircle(260+i*20,160,8,TFT_RED);
-    }
-    break;
   }
 }
 void valuesGhost(){
