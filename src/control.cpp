@@ -8,8 +8,11 @@ extern void setupScoreBoardGhost();
 extern void selectscherm();
 extern void selectLevel(uint8_t level);
 extern bool runGame;
+enum Levels {_LEVEL1,_LEVEL2};
+// extern enum _LEVEL2;
+extern void initWDT();
 
-uint8_t levelSelect = 0;
+uint8_t levelSelect = _LEVEL1;
 ControlStates controlState = _PLAYERMENU;
 
 void switchControlState(ControlStates newControlState){
@@ -18,12 +21,12 @@ void switchControlState(ControlStates newControlState){
 
     switch (levelSelect)
     {
-    case 0:
-      // setupScoreBoardVS();
+    case _LEVEL1:
       setupGame();
+      setupScoreBoardVS();
       break;
 
-    case 1:
+    case _LEVEL2:
       // switchControlState(_PLAYERMENU);
       if(!runGame){
         newControlState = _PLAYERMENU;
@@ -31,6 +34,7 @@ void switchControlState(ControlStates newControlState){
       }else{
         setupGame();
         setupScoreBoardGhost();
+        initWDT();
       }
       
       break;

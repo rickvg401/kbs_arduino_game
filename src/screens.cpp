@@ -104,6 +104,7 @@ void drawButtons(Adafruit_ILI9341 &tft, buttons* bList, uint8_t bSize)
 void globalInit(Adafruit_ILI9341 &tft)
 {
     tft.setTextSize(2);
+    tft.setFont();
     activeButton = 1;
 }
 
@@ -157,7 +158,7 @@ void handleLoadingScreen(Adafruit_ILI9341 &tft, actions action)
             drawButtons(tft, loadingScreenButtons, loadingScreenButtonsSize);
             break;
         case TOUCH:
-            for (size_t i = 0; i < loadingScreenButtonsSize; i++)
+            for (uint8_t i = 0; i < loadingScreenButtonsSize; i++)
             {
                 if (inBound((buttons) loadingScreenButtons[i]))
                 {
@@ -180,7 +181,7 @@ void handleMenuScreen(Adafruit_ILI9341 &tft, actions action)
             drawButtons(tft, menuScreenButtons, menuScreenButtonsSize);
             break;
         case TOUCH:
-            for (size_t i = 0; i < menuScreenButtonsSize; i++)
+            for (uint8_t i = 0; i < menuScreenButtonsSize; i++)
             {
                 if (inBound((buttons) menuScreenButtons[i]))
                 {
@@ -208,7 +209,7 @@ void handleLevelScreen(Adafruit_ILI9341 &tft, actions action)
             drawButtons(tft, levelScreenButtons, levelScreenButtonSize);
             break;
         case TOUCH:
-            for (size_t i = 0; i < levelScreenButtonSize; i++)
+            for (uint8_t i = 0; i < levelScreenButtonSize; i++)
             {
                 if (inBound((buttons) levelScreenButtons[i]))
                 {
@@ -236,7 +237,7 @@ void handleScoreScreen(Adafruit_ILI9341 &tft, actions action)
             drawButtons(tft, scoreScreenButtons, scoreScreenButtonsSize);
             break;
         case TOUCH:
-            for (size_t i = 0; i < scoreScreenButtonsSize; i++)
+            for (uint8_t i = 0; i < scoreScreenButtonsSize; i++)
             {
                 if (inBound((buttons) scoreScreenButtons[i]))
                 {
