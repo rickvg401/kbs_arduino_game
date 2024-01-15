@@ -24,7 +24,6 @@ void addScore(char name[6], uint32_t points);
 //function to call when going to highscore page
 void HighScorePage(){
   setupHighScore();
-  getScore();
   printHighScore(nameList,scoreList);
 }
 //clears the screen, sets the font and text color 
@@ -98,7 +97,7 @@ void sort(char names[10][6],uint32_t scores[10],int pos[10]){
 //fills EEPROM with mock scores
 void setupScore(){
   char names[10][6] = {"henk","kees","klaas","piet","jan","wilem","jurre","andor","rick","jay"};
-  uint32_t scores[10] ={1000000,1000,8000,4000,3000,6000,2000,7000,9000,5000};
+  uint32_t scores[10] ={10,20,30,40,50,60,70,80,90,100};
   for(int i = 0;i<10;i++){
     for(int j = 0;j<6;j++){
     EEPROM.put(i*10+j,names[i][j]);
