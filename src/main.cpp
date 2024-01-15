@@ -181,8 +181,8 @@ int main(void)
 
               sendCommand(0b0, 0b11110000); // stuur infrarood naar de andere dat de game start
             }
-            // if(buffer == 240) // als de arduino dit binnenkrijgt dan starten
-            // {
+            if(buffer == 240) // als de arduino dit binnenkrijgt dan starten
+            {
               //Serial.println("confirming");
               //Serial.print("_");
               //Serial.print(nunchukIsGhost);
@@ -198,7 +198,7 @@ int main(void)
               runGame = true;
               switchControlState(_GAME);
               
-            // }  
+            }  
           }
           lastButtonState2 = NunChuckPosition[3];
         
