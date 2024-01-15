@@ -13,6 +13,7 @@
 #include <screens.h>
 #include <control.h>
 #include <score.h>
+#include <ssd.h>
 // #include "display/fonts/PressStart2P_vaV74pt7b.h"
 #include "display/fonts/PressStart2P_vaV74pt7b.h"
 //general
@@ -32,6 +33,7 @@ int main(void)
   setVolume(100);
   enableLoop();
   playMusic();
+  showNum(0);
 
   sei();
   extern screens cScreen; // current screen // extern variable in header file gives linker error, this works, not ideal...

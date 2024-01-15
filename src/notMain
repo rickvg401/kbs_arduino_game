@@ -1302,6 +1302,7 @@ void getHighscore(){
   tft.println(printValue);
 }
 void showLives(){
+  showNum(playerLives[playerId]);
   if(!nunchukIsGhost){
     tft.fillRect(245,140,70,40,BACKGROUND);
     switch (levelSelect)
