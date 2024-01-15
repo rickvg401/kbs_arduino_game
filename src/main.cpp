@@ -82,11 +82,11 @@ int main(void)
             
             switch (levelSelect)
             {
-            case 0:
+            case _LEVEL1:
               sendCommand(nunchuckWrap(), encodeGridPosition(ghosts[playerId])); 
               break;
             
-            case 1:
+            case _LEVEL2:
               sendCommand(nunchuckWrap(), encodeGridPosition(ghosts2[playerId])); 
               break;
             }
@@ -95,11 +95,11 @@ int main(void)
             movePlayerNunchuk(playerId);
             switch (levelSelect)
             {
-            case 0:
+            case _LEVEL1:
               sendCommand(nunchuckWrap(), encodeGridPosition(players[playerId])); 
               break;
             
-            case 1:
+            case _LEVEL2:
               sendCommand(nunchuckWrap(), encodeGridPosition(players2[playerId])); 
               break;
             }

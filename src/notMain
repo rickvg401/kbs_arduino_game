@@ -246,7 +246,8 @@ uint8_t field2[FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION] = {
 {0xFF,0xFF,},
 };
 
-
+enum Levels {_LEVEL1,_LEVEL2};
+// extern int Levels;
 uint16_t playerResetPosition[COORD_LENGTH] = {0,0};
 uint16_t ghostResetPosition[COORD_LENGTH] = {0,0};
 
@@ -255,11 +256,11 @@ uint8_t getTileAt (uint8_t x, uint8_t y)
 {
   switch (levelSelect)
   {
-    case 0:
+    case _LEVEL1:
       return (field[y][x / 8] & (1 << (7-(x % 8))) ? 1 : 0);
       break;
 
-    case 1:
+    case _LEVEL2:
       return (field2[y][x / 8] & (1 << (7-(x % 8))) ? 1 : 0);
       break;
   }
@@ -270,7 +271,7 @@ void setResetPosition(){
 
   switch (levelSelect)
   {
-  case 0:
+  case _LEVEL1:
     playerResetPosition[_x_] = players[firstPlayer][_x_];
     playerResetPosition[_y_] = players[firstPlayer][_y_];
 
@@ -280,7 +281,7 @@ void setResetPosition(){
 
     break;
   
-  case 1:
+  case _LEVEL2:
     playerResetPosition[_x_] = players2[firstPlayer][_x_];
     playerResetPosition[_y_] = players2[firstPlayer][_y_];
 
@@ -335,13 +336,13 @@ void collectCoin(uint16_t playerIndex,uint16_t coinIndex){
   //Serial.print("collect coin");
   switch (levelSelect)
   {
-  case 0:
+  case _LEVEL1:
     playerResult[playerIndex]+=1;
     coinsCatched[coinIndex] = true;
     valuesVS();
     break;
   
-  case 1:
+  case _LEVEL2:
     // playerResult2[playerIndex]+=10;
     coinsCatched2[coinIndex] = true;
     break;
@@ -355,7 +356,7 @@ void collectGhost(uint16_t playerIndex,uint16_t ghostIndex){
 
   switch (levelSelect)
   {
-  case 0:
+  case _LEVEL1:
     ghostsCatched[ghostIndex] = false;
     playerLives[playerIndex]--;
 
@@ -367,7 +368,7 @@ void collectGhost(uint16_t playerIndex,uint16_t ghostIndex){
     
     break;
   
-  case 1:
+  case _LEVEL2:
     ghostsCatched2[ghostIndex] = false;
     playerLives2[playerIndex]--;
     ghosts2[ghostIndex][_x_] = ghostResetPosition[_x_];
@@ -385,7 +386,7 @@ void resetGame(){
 
   switch (levelSelect)
   {
-  case 0:
+  case _LEVEL1:
     for(int l = 0; l<PLAYER_LENGTH;l++){
       playerLives[l] = lives;
     }
@@ -398,7 +399,7 @@ void resetGame(){
     }
     break;
   
-  case 1:
+  case _LEVEL2:
     for(int l = 0; l<PLAYER_LENGTH2;l++){
       playerLives2[l] = lives;
     }
@@ -420,14 +421,14 @@ void resetGame(){
 void drawCoins(){
   switch (levelSelect)
   {
-  case 0:
+  case _LEVEL1:
     for(int i=0;i<COINS_LENGTH;i++){
       tft.fillRoundRect(coins[i][_x_], coins[i][_y_], BLOCK_SIZE, BLOCK_SIZE,100, COIN_COLOR);
     }
     
     break;
   
-  case 1:
+  case _LEVEL2:
       for(int i=0;i<COINS_LENGTH2;i++){
         tft.fillRoundRect(coins2[i][_x_], coins2[i][_y_], BLOCK_SIZE, BLOCK_SIZE,100, COIN_COLOR);
       }
@@ -439,7 +440,7 @@ void drawCoins(){
 void collision(){
   switch (levelSelect)
   {
-  case 0:
+  case _LEVEL1:
     for(int p = 0;(p<numPlayers&&p<PLAYER_LENGTH);p++){
     uint16_t x = players[p][_x_];
     uint16_t y = players[p][_y_];
@@ -465,7 +466,7 @@ void collision(){
     }
     break;
   
-  case 1:
+  case _LEVEL2:
     for(int p = 0;(p<numPlayers&&p<PLAYER_LENGTH2);p++){
     uint16_t x = players2[p][_x_];
     uint16_t y = players2[p][_y_];
@@ -504,7 +505,7 @@ bool endGame(){
 
   switch (levelSelect)
   {
-  case 0:
+  case _LEVEL1:
     // //if coins exist 
     // //set coinsExist to true
     if(!noCoins){
@@ -538,7 +539,7 @@ bool endGame(){
     }
     break;
   
-  case 1:
+  case _LEVEL2:
     // //if coins exist 
     // //set coinsExist to true
     if(!noCoins){
@@ -601,7 +602,7 @@ void drawGhost(uint8_t ghostIndex , uint16_t x, uint16_t y,uint16_t color){
 
   switch (levelSelect)
     {
-    case 0:
+    case _LEVEL1:
       ghosts[ghostIndex][_x_] = x;
       ghosts[ghostIndex][_y_] = y;
       break;
@@ -617,11 +618,11 @@ void drawGhost(uint8_t ghostIndex , uint16_t x, uint16_t y,uint16_t color){
 void moveGhost(uint8_t ghostIndex,uint16_t newX,uint16_t newY,uint16_t color){
   switch (levelSelect)
     {
-    case 0:
+    case _LEVEL1:
       drawPath(ghosts[ghostIndex][_x_],ghosts[ghostIndex][_y_]);
       break;
     
-    case 1:
+    case _LEVEL2:
       drawPath(ghosts2[ghostIndex][_x_],ghosts2[ghostIndex][_y_]);
       break;
     }
@@ -631,14 +632,14 @@ void moveGhost(uint8_t ghostIndex,uint16_t newX,uint16_t newY,uint16_t color){
 void drawGhosts(){
   switch (levelSelect)
   {
-  case 0:
+  case _LEVEL1:
     for(int i=0;i<GHOSTS_LENGTH;i++){
       // tft.fillRoundRect(ghosts[i][0], ghosts[i][1], BLOCK_SIZE, BLOCK_SIZE,5, GHOST_COLOR);
       drawGhost(i,ghosts[i][_x_],ghosts[i][_y_],GHOST_COLOR);
     }
     break;
   
-  case 1:
+  case _LEVEL2:
     for(int i=0;i<GHOSTS_LENGTH2;i++){
       // tft.fillRoundRect(ghosts2[i][0], ghosts2[i][1], BLOCK_SIZE, BLOCK_SIZE,5, GHOST_COLOR);
       drawGhost(i,ghosts2[i][_x_],ghosts2[i][_y_],GHOST_COLOR);
@@ -936,12 +937,12 @@ void drawPlayer(uint8_t playerIndex , uint16_t x, uint16_t y){
 
     switch (levelSelect)
     {
-    case 0:
+    case _LEVEL1:
       players[playerIndex][_x_] = x;
       players[playerIndex][_y_] = y;
       break;
     
-    case 1:
+    case _LEVEL2:
       players2[playerIndex][_x_] = x;
       players2[playerIndex][_y_] = y;
       break;
@@ -955,11 +956,11 @@ void drawPath(uint16_t x, uint16_t y){
 void movePlayer(uint8_t playerIndex,uint16_t newX,uint16_t newY){
     switch (levelSelect)
     {
-    case 0:
+    case _LEVEL1:
       drawPath(players[playerIndex][_x_],players[playerIndex][_y_]);
       break;
     
-    case 1:
+    case _LEVEL2:
       drawPath(players2[playerIndex][_x_],players2[playerIndex][_y_]);
       break;
     }
@@ -976,12 +977,12 @@ void movePlayerNunchuk(uint8_t playerIndex){
 
     switch (levelSelect)
     {
-    case 0:
+    case _LEVEL1:
       newX = players[playerIndex][_x_];
       newY = players[playerIndex][_y_];
       break;
     
-    case 1:
+    case _LEVEL2:
       newX = players2[playerIndex][_x_];
       newY = players2[playerIndex][_y_];
       break;
@@ -1007,11 +1008,11 @@ void movePlayerNunchuk(uint8_t playerIndex){
   uint16_t* coordPtr;// = NULL;
   switch (levelSelect)
     {
-    case 0:
+    case _LEVEL1:
       coordPtr = walkTo(players[playerIndex][_x_],players[playerIndex][_y_],newX,newY);
       break;
     
-    case 1:
+    case _LEVEL2:
       coordPtr = walkTo(players2[playerIndex][_x_],players2[playerIndex][_y_],newX,newY);
       break;
     }
@@ -1036,12 +1037,12 @@ void moveGhostNunchuk(uint8_t ghostIndex){
 
     switch (levelSelect)
     {
-    case 0:
+    case _LEVEL1:
       newX = ghosts[ghostIndex][_x_];
       newY = ghosts[ghostIndex][_y_];
       break;
     
-    case 1:
+    case _LEVEL2:
       newX = ghosts2[ghostIndex][_x_];
       newY = ghosts2[ghostIndex][_y_];
       break;
@@ -1067,11 +1068,11 @@ void moveGhostNunchuk(uint8_t ghostIndex){
   uint16_t* coordPtr;// = NULL;
   switch (levelSelect)
     {
-    case 0:
+    case _LEVEL1:
       coordPtr = walkTo(ghosts[ghostIndex][_x_],ghosts[ghostIndex][_y_],newX,newY);
       break;
     
-    case 1:
+    case _LEVEL2:
       coordPtr = walkTo(ghosts2[ghostIndex][_x_],ghosts2[ghostIndex][_y_],newX,newY);
       break;
     }
@@ -1083,8 +1084,8 @@ void moveGhostNunchuk(uint8_t ghostIndex){
 void selectLevel(uint8_t level){
   switch (level)
   {
-  case 0:
-    levelSelect = 0;
+  case _LEVEL1:
+    levelSelect = _LEVEL1;
     noCoins = false;
     noGhost = true;
     // nunchukIsGhost = false;
@@ -1093,15 +1094,10 @@ void selectLevel(uint8_t level){
     // playerId = 0;
     // IrId = 1;
     break;
-  case 1:
-    levelSelect = 1;
+  case _LEVEL2:
+    levelSelect = _LEVEL1;
     noCoins = true;
     noGhost = false;
-    nunchukIsGhost = false;
-    IrIsGhost = true;
-
-    playerId = 0;
-    IrId = 0;
     break;
   }
 
@@ -1115,13 +1111,13 @@ void drawLevel(){
   drawGhosts();
   switch (levelSelect)
   {
-  case 0:
+  case _LEVEL1:
     for(int i =0;i<numPlayers;i++){
       drawPlayer(i,players[i][_x_],players[i][_y_]);
     }
     break;
   
-  case 1:
+  case _LEVEL2:
     for(int i =0;i<numPlayers;i++){
       drawPlayer(i,players2[i][_x_],players2[i][_y_]);
     }
@@ -1240,12 +1236,12 @@ void moveOverIR(uint8_t playerIndex)
 
     switch (levelSelect)
     {
-    case 0:
+    case _LEVEL1:
       newX = players[playerIndex][_x_];
       newY = players[playerIndex][_y_];
       break;
     
-    case 1:
+    case _LEVEL2:
       newX = players2[playerIndex][_x_];
       newY = players2[playerIndex][_y_];
       break;
@@ -1262,11 +1258,11 @@ void syncPlayerLocation(uint16_t* coordPtr, uint8_t playerIndex)
   uint16_t* coordPtr2;// = NULL;
   switch (levelSelect)
   {
-  case 0:
+  case _LEVEL1:
     coordPtr2 = walkTo(players[playerIndex][_x_],players[playerIndex][_y_],coordPtr[_x_],coordPtr[_y_]);
     break;
   
-  case 1:
+  case _LEVEL2:
     coordPtr2 = walkTo(players2[playerIndex][_x_],players2[playerIndex][_y_],coordPtr[_x_],coordPtr[_y_]);
     break;
   }
@@ -1320,13 +1316,14 @@ void showLives(){
     tft.fillRect(245,140,70,40,BACKGROUND);
     switch (levelSelect)
     {
-    case 0:
+    case _LEVEL1:
+      
       for(int i = 0;i<playerLives[playerId];i++){
         tft.fillCircle(260+i*20,160,8,TFT_RED);
       }
       break;
     
-    case 1:
+    case _LEVEL2:
       for(int i = 0;i<playerLives2[playerId];i++){
         tft.fillCircle(260+i*20,160,8,TFT_RED);
       }
@@ -1400,11 +1397,11 @@ void syncGhostLocation(uint16_t* coordPtr, uint8_t ghostIndex)
   uint16_t* coordPtr2;// = NULL;
   switch (levelSelect)
   {
-  case 0:
+  case _LEVEL1:
     coordPtr2 = walkTo(ghosts[ghostIndex][_x_],ghosts[ghostIndex][_y_],coordPtr[_x_],coordPtr[_y_]);
     break;
   
-  case 1:
+  case _LEVEL2:
     coordPtr2 = walkTo(ghosts2[ghostIndex][_x_],ghosts2[ghostIndex][_y_],coordPtr[_x_],coordPtr[_y_]);
     break;
   }
@@ -1422,12 +1419,12 @@ void moveGhostOverIR(uint8_t ghostIndex)
 
     switch (levelSelect)
     {
-    case 0:
+    case _LEVEL1:
       newX = ghosts[ghostIndex][_x_];
       newY = ghosts[ghostIndex][_y_];
       break;
     
-    case 1:
+    case _LEVEL2:
       newX = ghosts2[ghostIndex][_x_];
       newY = ghosts2[ghostIndex][_y_];
       break;
