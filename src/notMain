@@ -32,6 +32,8 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 
 //game
 //game
+#define firstPlayer 0
+#define COORD_LENGTH 2 //length of coord system (x,y)
 const int GAMECLOCK = 15; //ball updates every x times per second
 // uint16_t playerPosX;
 // uint16_t playerPosY;
@@ -166,7 +168,7 @@ extern uint8_t levelSelect;
 const uint8_t COINS_LENGTH  = 7;
 const uint8_t GHOSTS_LENGTH = 0;
 const uint8_t PLAYER_LENGTH = 6;
-uint16_t coins[7][2] = {
+uint16_t coins[COINS_LENGTH][COORD_LENGTH] = {
 {1*BLOCK_SIZE,1*BLOCK_SIZE},
 {1*BLOCK_SIZE,4*BLOCK_SIZE},
 {5*BLOCK_SIZE,1*BLOCK_SIZE},
@@ -176,8 +178,8 @@ uint16_t coins[7][2] = {
 {1*BLOCK_SIZE,10*BLOCK_SIZE},
 
 };
-bool coinsCatched[7] = {false,false,false,false,false,false,false,};
-uint16_t players[6][2] = {
+bool coinsCatched[COINS_LENGTH] = {false,false,false,false,false,false,false,};
+uint16_t players[PLAYER_LENGTH][COORD_LENGTH] = {
 {1*BLOCK_SIZE,13*BLOCK_SIZE},
 {1*BLOCK_SIZE,12*BLOCK_SIZE},
 {1*BLOCK_SIZE,14*BLOCK_SIZE},
@@ -185,11 +187,11 @@ uint16_t players[6][2] = {
 {2*BLOCK_SIZE,13*BLOCK_SIZE},
 {2*BLOCK_SIZE,14*BLOCK_SIZE},
 };
-uint16_t playerResult[6] = {0,0,0,0,0,0,};
-uint16_t playerLives[6] = {0,0,0,0,0,0,};
-uint16_t ghosts[0][2] = {
+uint16_t playerResult[PLAYER_LENGTH] = {0,0,0,0,0,0,};
+uint16_t playerLives[PLAYER_LENGTH] = {0,0,0,0,0,0,};
+uint16_t ghosts[GHOSTS_LENGTH][COORD_LENGTH] = {
 };
-bool ghostsCatched[0] = {};
+bool ghostsCatched[GHOSTS_LENGTH] = {};
 uint8_t field[FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION] = {
 {0xFF,0xFF,},
 {0x80,0x01,},
@@ -212,19 +214,19 @@ uint8_t field[FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION] = {
 const uint8_t COINS_LENGTH2  = 0;
 const uint8_t GHOSTS_LENGTH2 = 1;
 const uint8_t PLAYER_LENGTH2 = 2;
-uint16_t coins2[0][2] = {};
-bool coinsCatched2[0] ={}; 
-uint16_t players2[2][2] = {
+uint16_t coins2[COINS_LENGTH2][COORD_LENGTH] = {};
+bool coinsCatched2[COINS_LENGTH2] ={}; 
+uint16_t players2[PLAYER_LENGTH2][COORD_LENGTH] = {
 {6*BLOCK_SIZE,14*BLOCK_SIZE},
 {7*BLOCK_SIZE,14*BLOCK_SIZE},
 };
-uint16_t playerResult2[2] = {0,0,};
-uint16_t playerLives2[2] = {0,0,};
-uint16_t ghosts2[1][2] = {
+uint16_t playerResult2[PLAYER_LENGTH2] = {0,0,};
+uint16_t playerLives2[PLAYER_LENGTH2] = {0,0,};
+uint16_t ghosts2[GHOSTS_LENGTH2][COORD_LENGTH] = {
 // {6*BLOCK_SIZE,7*BLOCK_SIZE},
 {2*BLOCK_SIZE,3*BLOCK_SIZE},
 };
-bool ghostsCatched2[1] = {false,};
+bool ghostsCatched2[GHOSTS_LENGTH2] = {false,};
 uint8_t field2[FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION] = {
 {0xFF,0xFF,},
 {0x80,0x81,},
@@ -245,8 +247,8 @@ uint8_t field2[FIELD_HEIGHT][FIELD_WIDTH / FIELD_DIVISION] = {
 };
 
 
-uint16_t playerResetPosition[2] = {0,0};
-uint16_t ghostResetPosition[2] = {0,0};
+uint16_t playerResetPosition[COORD_LENGTH] = {0,0};
+uint16_t ghostResetPosition[COORD_LENGTH] = {0,0};
 
 
 uint8_t getTileAt (uint8_t x, uint8_t y)
@@ -264,24 +266,26 @@ uint8_t getTileAt (uint8_t x, uint8_t y)
 }
 
 void setResetPosition(){
+
+
   switch (levelSelect)
   {
   case 0:
-    playerResetPosition[0] = players[0][0];
-    playerResetPosition[1] = players[0][1];
+    playerResetPosition[_x_] = players[firstPlayer][_x_];
+    playerResetPosition[_y_] = players[firstPlayer][_y_];
 
-    ghostResetPosition[0] = ghosts[0][0];
-    ghostResetPosition[1] = ghosts[0][1];
+    ghostResetPosition[_x_] = ghosts[firstPlayer][_x_];
+    ghostResetPosition[_y_] = ghosts[firstPlayer][_y_];
 
 
     break;
   
   case 1:
-    playerResetPosition[0] = players2[0][0];
-    playerResetPosition[1] = players2[0][1];
+    playerResetPosition[_x_] = players2[firstPlayer][_x_];
+    playerResetPosition[_y_] = players2[firstPlayer][_y_];
 
-    ghostResetPosition[0] = ghosts2[0][0];
-    ghostResetPosition[1] = ghosts2[0][1];
+    ghostResetPosition[_x_] = ghosts2[firstPlayer][_x_];
+    ghostResetPosition[_y_] = ghosts2[firstPlayer][_y_];
     break;
   }
   
@@ -319,10 +323,10 @@ uint8_t encodeGridPosition(uint16_t* coords){//max 16x16 grid with 8bits
 }
 
 uint16_t* decodeGridPosition(uint8_t gridpos){//max 16x16 grid with 8bits
-  uint16_t *coords= new uint16_t[2];
+  uint16_t *coords= new uint16_t[COORD_LENGTH];
   
-  coords[0] = ((gridpos>>4))*BLOCK_SIZE;
-  coords[1] = (gridpos & 0xF)*BLOCK_SIZE;
+  coords[_x_] = ((gridpos>>4))*BLOCK_SIZE;
+  coords[_y_] = (gridpos & 0xF)*BLOCK_SIZE;
 
   return coords;
 }
@@ -355,22 +359,22 @@ void collectGhost(uint16_t playerIndex,uint16_t ghostIndex){
     ghostsCatched[ghostIndex] = false;
     playerLives[playerIndex]--;
 
-    ghosts[ghostIndex][0] = ghostResetPosition[0];
-    ghosts[ghostIndex][1] = ghostResetPosition[1];
+    ghosts[ghostIndex][_x_] = ghostResetPosition[_x_];
+    ghosts[ghostIndex][_y_] = ghostResetPosition[_y_];
 
-    players[playerIndex][0] = playerResetPosition[0];
-    players[playerIndex][1] = playerResetPosition[1];
+    players[playerIndex][_x_] = playerResetPosition[_x_];
+    players[playerIndex][_y_] = playerResetPosition[_y_];
     
     break;
   
   case 1:
     ghostsCatched2[ghostIndex] = false;
     playerLives2[playerIndex]--;
-    ghosts2[ghostIndex][0] = ghostResetPosition[0];
-    ghosts2[ghostIndex][1] = ghostResetPosition[1];
+    ghosts2[ghostIndex][_x_] = ghostResetPosition[_x_];
+    ghosts2[ghostIndex][_y_] = ghostResetPosition[_y_];
 
-    players2[playerIndex][0] = playerResetPosition[0];
-    players2[playerIndex][1] = playerResetPosition[1];
+    players2[playerIndex][_x_] = playerResetPosition[_x_];
+    players2[playerIndex][_y_] = playerResetPosition[_y_];
     break;
   }
 
@@ -418,14 +422,14 @@ void drawCoins(){
   {
   case 0:
     for(int i=0;i<COINS_LENGTH;i++){
-      tft.fillRoundRect(coins[i][0], coins[i][1], BLOCK_SIZE, BLOCK_SIZE,100, COIN_COLOR);
+      tft.fillRoundRect(coins[i][_x_], coins[i][_y_], BLOCK_SIZE, BLOCK_SIZE,100, COIN_COLOR);
     }
     
     break;
   
   case 1:
       for(int i=0;i<COINS_LENGTH2;i++){
-        tft.fillRoundRect(coins2[i][0], coins2[i][1], BLOCK_SIZE, BLOCK_SIZE,100, COIN_COLOR);
+        tft.fillRoundRect(coins2[i][_x_], coins2[i][_y_], BLOCK_SIZE, BLOCK_SIZE,100, COIN_COLOR);
       }
       break;
   }
@@ -630,14 +634,14 @@ void drawGhosts(){
   case 0:
     for(int i=0;i<GHOSTS_LENGTH;i++){
       // tft.fillRoundRect(ghosts[i][0], ghosts[i][1], BLOCK_SIZE, BLOCK_SIZE,5, GHOST_COLOR);
-      drawGhost(i,ghosts[i][0],ghosts[i][1],GHOST_COLOR);
+      drawGhost(i,ghosts[i][_x_],ghosts[i][_y_],GHOST_COLOR);
     }
     break;
   
   case 1:
     for(int i=0;i<GHOSTS_LENGTH2;i++){
       // tft.fillRoundRect(ghosts2[i][0], ghosts2[i][1], BLOCK_SIZE, BLOCK_SIZE,5, GHOST_COLOR);
-      drawGhost(i,ghosts2[i][0],ghosts2[i][1],GHOST_COLOR);
+      drawGhost(i,ghosts2[i][_x_],ghosts2[i][_y_],GHOST_COLOR);
 
     }
     break;
@@ -679,7 +683,7 @@ uint16_t* walkTo(uint16_t xFrom, uint16_t yFrom,uint16_t xTo,uint16_t yTo){
 //xy free coord
 
 //work in progress
-  uint16_t *coords= new uint16_t[2];
+  uint16_t *coords= new uint16_t[COORD_LENGTH];
   float xg = (float)xTo/(float)BLOCK_SIZE;
   float yg = (float)yTo/(float)BLOCK_SIZE;
 
@@ -690,14 +694,14 @@ uint16_t* walkTo(uint16_t xFrom, uint16_t yFrom,uint16_t xTo,uint16_t yTo){
 
   bool xgmb = getTileAt(xg_m,yg_m);
 
-  coords[0] = xFrom;
-  coords[1] = yFrom;
+  coords[_x_] = xFrom;
+  coords[_y_] = yFrom;
 
 
 
   if(!xgmb){
-    coords[0] = xg_m*BLOCK_SIZE;
-    coords[1] = yg_m*BLOCK_SIZE;
+    coords[_x_] = xg_m*BLOCK_SIZE;
+    coords[_y_] = yg_m*BLOCK_SIZE;
   }
 
 
@@ -1014,7 +1018,7 @@ void movePlayerNunchuk(uint8_t playerIndex){
     
 
 
-    movePlayer(playerIndex,coordPtr[0],coordPtr[1]);
+    movePlayer(playerIndex,coordPtr[_x_],coordPtr[_y_]);
     delete coordPtr;
     
     
@@ -1072,7 +1076,7 @@ void moveGhostNunchuk(uint8_t ghostIndex){
       break;
     }
     
-    moveGhost(ghostIndex,coordPtr[0],coordPtr[1],GHOST_COLOR);
+    moveGhost(ghostIndex,coordPtr[_x_],coordPtr[_y_],GHOST_COLOR);
     delete coordPtr;
 }
 
