@@ -22,7 +22,31 @@ bool NunChuckPositionDivided = false;
 // Touch screen
 Adafruit_FT6206 ctp = Adafruit_FT6206();
 
-
+// infrarood defines
+#define MAXBUFFERVALUE 12 // 757
+#define ENDSIGNALBEGIN 290 //761
+#define ENDSIGNALEND 320 // 761
+#define ENDREACHED  1 // 763
+#define BEGINSIGNALBEGIN 260 // 768
+#define BEGINSIGNALEND 280 // 768
+#define ENDCLEAR 0 // 770
+#define ONESIGNALBEGIN 160 // 776
+#define ONESIGNALEND 190 // 776
+#define ZEROSIGNALBEGIN 95 // 783
+#define ZEROSIGNALEND 65 // 783
+#define CURRENTCOUNTERONEVALUE 200 // 806
+#define CURRENTCOUNTERONELIMIT 175 // 810
+#define CURRENTCOUNTERZEROVALUE 100 //819
+#define CURRENTCOUNTERZEROLIMIT 75 //823
+#define CURRENTCOUNTERBEGINVALUE 750 //832
+#define CURRENTCOUNTERBEGINLIMIT 268 //836
+#define CURRENTCOUNTERENDVALUE 5000 // 846
+#define CURRENTCOUNTERENDLIMIT 310 // 850
+#define CURRENTCOUNTERSYNCHROONLIMIT 5000 // 858
+#define OCR0AVALUE 208 // 875
+#define BUFFERIRBEGIN 10 //1434
+#define BUFFERIREND 256 // 1434
+// infrarood defines
 /*display*/
 #define TFT_DC 9
 #define TFT_CS 10
@@ -112,6 +136,8 @@ volatile uint16_t currentcounterzero = 0;
 
 volatile uint16_t currentcounterend = 0;
 volatile uint16_t currentcounterbegin = 0;
+
+
 
 // buffer
 // uint16_t bufferResult = 0;
@@ -698,11 +724,11 @@ uint16_t* walkTo(uint16_t xFrom, uint16_t yFrom,uint16_t xTo,uint16_t yTo){
 
 void sendNEC(uint8_t data) {
  
-      if(data == 1 ) // && !logicalzero && !logicalone
+      if(data == 1 )
       {
         // Verzend een logische '1'
         // begin counter van 0 en tot die tijd zet infrared aan 
-        counter69 = 0;
+        counter69 = NULL;
         logicalone = true;
         TCCR0A |= (1<< COM0A0); // toggle pin met 38Khz
       }
@@ -710,7 +736,7 @@ void sendNEC(uint8_t data) {
       {
         // Verzend een logische '0'
         // begin counter van 0 en tot die tijd zet infrared aan
-        counter69 = 0;
+        counter69 = NULL;
         logicalzero = true;
         TCCR0A |= (1<<COM0A0); // toggle de pin met 38KHZ
       }
@@ -722,7 +748,7 @@ void sendNEC(uint8_t data) {
 
 void sendEnd()
 {
-    counter69 = 0;
+    counter69 = NULL;
     logicalend = true;
     TCCR0A |= (1<<COM0A0); // toggle de pin met 38KHZ
     while(logicalone || logicalzero || logicalend || logicalbegin)
@@ -732,7 +758,7 @@ void sendEnd()
 
 void sendBegin()
 {
-    counter69 = 0;
+    counter69 = NULL;
     logicalbegin = true;
     TCCR0A |= (1<<COM0A0); // toggle de pin met 38KHZ
     while(logicalone || logicalzero || logicalend || logicalbegin)
@@ -754,33 +780,33 @@ ISR(INT0_vect)
      currentCounterValue = counter;
      pulseDuration = abs(currentCounterValue - prevCounterValue);
 
-     if(bufferIndex == 12)
+     if(bufferIndex == MAXBUFFERVALUE)
      {
       bufferIndex = 0;
      }
-    if (pulseDuration > 290 && pulseDuration < 320)
+     // end signal
+    if (pulseDuration > ENDSIGNALBEGIN && pulseDuration < ENDSIGNALEND)
     {
-      end = 1;
-      // bufferdata = buffer >> 4;
-      // buffer = buffer >> 4; // logical end
-    }
+      end = ENDREACHED;
 
-    if (pulseDuration > 260 && pulseDuration < 280) 
+    }
+    // begin signal
+    if (pulseDuration > BEGINSIGNALBEGIN && pulseDuration < BEGINSIGNALEND) 
     {
-      end = 0;
-      buffer = 0;
-      bufferIndex = 0; // logical begin
+      end = ENDCLEAR;
+      buffer = NULL;
+      bufferIndex = NULL; // logical begin
       
     }
 
-    if(pulseDuration > 160 && pulseDuration < 190) {
+    if(pulseDuration > ONESIGNALBEGIN && pulseDuration < ONESIGNALEND) {
 
       // Voeg '1' toe aan buffer
-      eenofnull = 1; 
+      eenofnull = NULL; 
       buffer |= (1 << bufferIndex); // Zet het bit op 1 
       bufferIndex++;
 
-    } else if (pulseDuration < 95 && pulseDuration > 65 ) {
+    } else if (pulseDuration < ZEROSIGNALBEGIN && pulseDuration > ZEROSIGNALEND ) {
       // Voeg '0' toe aan buffer
       eenofnull = 0;
       buffer &= ~(1 << bufferIndex); // Zet het bit op 0
@@ -803,11 +829,11 @@ ISR(TIMER0_COMPA_vect)
   if (logicalone == true)
   {
     currentcounterone = counter69;
-    if(currentcounterone > 200)
+    if(currentcounterone > CURRENTCOUNTERONEVALUE)
     {
       logicalone = false;
     }
-    if ((currentcounterone ) >= (175)) 
+    if ((currentcounterone ) >= (CURRENTCOUNTERONELIMIT)) 
     { 
       TCCR0A &= ~(1 << COM0A0);
     }
@@ -816,11 +842,11 @@ ISR(TIMER0_COMPA_vect)
   if (logicalzero == true)
   {
     currentcounterzero = counter69;
-    if(currentcounterzero > 100)
+    if(currentcounterzero > CURRENTCOUNTERZEROVALUE)
     {
       logicalzero = false;
     }
-    if ((currentcounterzero ) >= (75)) 
+    if ((currentcounterzero ) >= (CURRENTCOUNTERZEROLIMIT)) 
     {
       TCCR0A &= ~(1 << COM0A0);
     }
@@ -829,11 +855,11 @@ ISR(TIMER0_COMPA_vect)
   if(logicalbegin == true)
   {
     currentcounterbegin = counter69;
-    if(currentcounterbegin > 750) // 750
+    if(currentcounterbegin > CURRENTCOUNTERBEGINVALUE) // 750
     {
       logicalbegin = false;
     }
-    if((currentcounterbegin) >= (268))  // 268
+    if((currentcounterbegin) >= (CURRENTCOUNTERBEGINLIMIT))  // 268
     {
       TCCR0A &= ~(1 << COM0A0);
     }
@@ -843,11 +869,11 @@ ISR(TIMER0_COMPA_vect)
   if(logicalend == true)
   {
     currentcounterend = counter69;
-    if(currentcounterend > 5000) // 325
+    if(currentcounterend > CURRENTCOUNTERENDVALUE) // 325
     {
       logicalend = false;
     }
-    if((currentcounterend) >= (310)) //
+    if((currentcounterend) >= (CURRENTCOUNTERENDLIMIT)) //
     {
       TCCR0A &= ~(1 << COM0A0);
     }
@@ -855,7 +881,7 @@ ISR(TIMER0_COMPA_vect)
   if(synchroon)
   {
     currentcountersynchroon = counter69;
-    if(currentcountersynchroon > 5000)
+    if(currentcountersynchroon > CURRENTCOUNTERSYNCHROONLIMIT)
     {
       synchroniseer = true;
       synchroon = false;
@@ -872,7 +898,7 @@ void initIR()
     // TCCR1A &= ~(1<<COM1A0); // disable  -> toggle OC1A pin 9 on compare match
 
     // timer 0 voor irled
-    OCR0A = 208;
+    OCR0A = OCR0AVALUE;
     TCCR0A |= (1<<WGM01);
     TCCR0B |= (1<<CS00); // no prescaler
     TIMSK0 |= (1<<OCIE0A); // enable timer compare interrupt
@@ -1239,7 +1265,7 @@ void moveOverIR(uint8_t playerIndex)
     } 
 
   
-    if(buffer > 10 && buffer < 256 && synchroniseer){
+    if(buffer > BUFFERIRBEGIN && buffer < BUFFERIREND && synchroniseer){
           syncPlayerLocation(decodeGridPosition(buffer), 1);
           synchroon = true;
     }
@@ -1431,7 +1457,7 @@ void moveGhostOverIR(uint8_t ghostIndex)
       break;
     } 
   
-    if(buffer > 10 && buffer < 256 && synchroniseer){
+    if(buffer > BUFFERIRBEGIN && buffer < BUFFERIREND && synchroniseer){
           syncGhostLocation(decodeGridPosition(buffer), 1);
           synchroon = true;
     }
