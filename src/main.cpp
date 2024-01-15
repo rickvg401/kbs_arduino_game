@@ -47,7 +47,7 @@ int main(void)
   Wire.begin();
 
   if(!setupDisplay()){return 0;}
-  if (!ctp.begin(40, &Wire)) { return 1; }
+  if (!ctp.begin(TouchScreenAdr, &Wire)) { return 1; }
 
   uint8_t f = true;
   while(!setupNunchuck())
@@ -69,8 +69,6 @@ int main(void)
       switch(controlState)
       {
         case _GAME:
-          // sendCommand(nunchuckWrap(), nunchuckWrap());
-
           if(IrIsGhost){
             moveGhostOverIR(IrId);
           }else{
@@ -105,14 +103,13 @@ int main(void)
             }
           }
             
-          if(buffer == 255){
+          if(buffer == ENDGAMEVALUE){
             runGame=false; switchControlState(_MENU);nScreen=LOADING_SCREEN;
           }
 
           //
           collision();
-          // if(endGame()){switchControlState(_MENU);}
-          if(endGame()){runGame=false; switchControlState(_MENU);nScreen=LOADING_SCREEN; sendCommand(0b0, 0b11111111);}
+          if(endGame()){runGame=false; switchControlState(_MENU);nScreen=LOADING_SCREEN; sendCommand(EMPTY, ENDGAMEVALUE);}
           break;
         case _PLAYERMENU:
           if (NunChuckPosition[2] != lastButtonState)
@@ -129,7 +126,7 @@ int main(void)
               {
                 tft.println("Ghost");
                 GhostOfPacman = !GhostOfPacman;
-                sendCommand(0b00000000, 0b11001100);
+                sendCommand(EMPTY, GHOSTSETUPVALUE);
                 nunchukIsGhost = true;
                 playerMenuSet = true;
                 playerId = 0;//ghosts Id
@@ -138,7 +135,7 @@ int main(void)
               {
                 tft.println("PacMan");
                 GhostOfPacman = !GhostOfPacman;
-                sendCommand(0b00000000, 0b00110011);
+                sendCommand(EMPTY, PACMANSETUPVALUE);
                 nunchukIsGhost = false;
                 playerMenuSet = true;
                 playerId = 0;//players Id
@@ -146,7 +143,7 @@ int main(void)
             }
           }
           lastButtonState = NunChuckPosition[2];
-          if(buffer == 204){
+          if(buffer == GHOSTSETUPVALUE){
             //Serial.println("switching 1");
 
             tft.setTextColor(TFT_WHITE);
@@ -159,7 +156,7 @@ int main(void)
             IrId = 0;//ghosts Id
             buffer = 0;
           }
-          if(buffer == 51){
+          if(buffer == PACMANSETUPVALUE){
             //Serial.println("switching 2");
 
             tft.setTextColor(TFT_WHITE);
@@ -179,22 +176,11 @@ int main(void)
             {
               //Serial.println("confirm");
 
-              sendCommand(0b0, 0b11110000); // stuur infrarood naar de andere dat de game start
+              sendCommand(EMPTY, SETUPCONFIRM); // stuur infrarood naar de andere dat de game start
             }
-            if(buffer == 240) // als de arduino dit binnenkrijgt dan starten
+            if(buffer == SETUPCONFIRM) // als de arduino dit binnenkrijgt dan starten
             {
-              //Serial.println("confirming");
-              //Serial.print("_");
-              //Serial.print(nunchukIsGhost);
-              //Serial.print(":");
-              //Serial.print(playerId);
-              //Serial.print("_");
-              //Serial.print(IrIsGhost);
-              //Serial.print(":");
-              //Serial.print(IrId);
-
-
-              sendCommand(0b0, 0b11110000);
+              sendCommand(EMPTY, SETUPCONFIRM);
               runGame = true;
               switchControlState(_GAME);
               
