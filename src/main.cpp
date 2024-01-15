@@ -42,7 +42,8 @@ int main(void)
   
    
   initIR();
-  Serial.begin(BAUDRATE);
+  getScore();
+  //Serial.begin(BAUDRATE);
   Wire.begin();
 
   if(!setupDisplay()){return 0;}
@@ -81,11 +82,11 @@ int main(void)
             
             switch (levelSelect)
             {
-            case 0:
+            case _LEVEL1:
               sendCommand(nunchuckWrap(), encodeGridPosition(ghosts[playerId])); 
               break;
             
-            case 1:
+            case _LEVEL2:
               sendCommand(nunchuckWrap(), encodeGridPosition(ghosts2[playerId])); 
               break;
             }
@@ -94,11 +95,11 @@ int main(void)
             movePlayerNunchuk(playerId);
             switch (levelSelect)
             {
-            case 0:
+            case _LEVEL1:
               sendCommand(nunchuckWrap(), encodeGridPosition(players[playerId])); 
               break;
             
-            case 1:
+            case _LEVEL2:
               sendCommand(nunchuckWrap(), encodeGridPosition(players2[playerId])); 
               break;
             }
@@ -116,7 +117,7 @@ int main(void)
         case _PLAYERMENU:
           if (NunChuckPosition[2] != lastButtonState)
           {
-            Serial.println("switch");
+            //Serial.println("switch");
             tft.setTextColor(TFT_WHITE);
             tft.setTextSize(1);
 
@@ -146,7 +147,7 @@ int main(void)
           }
           lastButtonState = NunChuckPosition[2];
           if(buffer == 204){
-            Serial.println("switching 1");
+            //Serial.println("switching 1");
 
             tft.setTextColor(TFT_WHITE);
             tft.setTextSize(1);
@@ -159,7 +160,7 @@ int main(void)
             buffer = 0;
           }
           if(buffer == 51){
-            Serial.println("switching 2");
+            //Serial.println("switching 2");
 
             tft.setTextColor(TFT_WHITE);
             tft.setTextSize(1);
@@ -176,21 +177,21 @@ int main(void)
           if(nunchukIsGhost != IrIsGhost){  
             if(NunChuckPosition[3] !=lastButtonState2) // als de onderste knop op de nunchuk is ingedrukt
             {
-              Serial.println("confirm");
+              //Serial.println("confirm");
 
               sendCommand(0b0, 0b11110000); // stuur infrarood naar de andere dat de game start
             }
             if(buffer == 240) // als de arduino dit binnenkrijgt dan starten
             {
-              Serial.println("confirming");
-              Serial.print("_");
-              Serial.print(nunchukIsGhost);
-              Serial.print(":");
-              Serial.print(playerId);
-              Serial.print("_");
-              Serial.print(IrIsGhost);
-              Serial.print(":");
-              Serial.print(IrId);
+              //Serial.println("confirming");
+              //Serial.print("_");
+              //Serial.print(nunchukIsGhost);
+              //Serial.print(":");
+              //Serial.print(playerId);
+              //Serial.print("_");
+              //Serial.print(IrIsGhost);
+              //Serial.print(":");
+              //Serial.print(IrId);
 
 
               sendCommand(0b0, 0b11110000);
