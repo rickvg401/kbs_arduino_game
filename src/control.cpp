@@ -8,6 +8,7 @@ extern void setupScoreBoardGhost();
 extern void selectscherm();
 extern void selectLevel(uint8_t level);
 extern bool runGame;
+extern void initWDT();
 
 uint8_t levelSelect = 0;
 ControlStates controlState = _PLAYERMENU;
@@ -31,6 +32,7 @@ void switchControlState(ControlStates newControlState){
       }else{
         setupGame();
         setupScoreBoardGhost();
+        initWDT();
       }
       
       break;

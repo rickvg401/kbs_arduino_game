@@ -54,10 +54,14 @@ uint8_t nunchuckData = 0b0000;
 
 //Scoreboard
 uint8_t lives = 3;
-uint16_t score = 0;
+volatile uint16_t score = 0;
 char printValue[2];
-
-
+char printValue2[4];
+bool isGhost = false;
+void outWDT();
+void initWDT();
+void showLives();
+void updateScore();
 const uint16_t FIELD_WIDTH = 16;
 const uint16_t FIELD_HEIGHT = 16; // could be uint8_t
 const uint8_t BLOCK_SIZE = 15;
@@ -324,7 +328,7 @@ uint16_t* decodeGridPosition(uint8_t gridpos){//max 16x16 grid with 8bits
 }
 
 void collectCoin(uint16_t playerIndex,uint16_t coinIndex){
-  Serial.print("collect coin");
+  //Serial.print("collect coin");
   switch (levelSelect)
   {
   case 0:
@@ -343,7 +347,7 @@ void collectCoin(uint16_t playerIndex,uint16_t coinIndex){
 }
 
 void collectGhost(uint16_t playerIndex,uint16_t ghostIndex){
-  // Serial.println("catched a ghost");
+  // //Serial.println("catched a ghost");
 
   switch (levelSelect)
   {
@@ -566,15 +570,18 @@ bool endGame(){
   }
 
   
-  // Serial.print(!coinsExist);
-  // Serial.print(":");
-  // Serial.print(!ghostsExist);
-  // Serial.print(":");
-  // Serial.println(!livesExist);
+  // //Serial.print(!coinsExist);
+  // //Serial.print(":");
+  // //Serial.print(!ghostsExist);
+  // //Serial.print(":");
+  // //Serial.println(!livesExist);
 
   if(!coinsExist || !ghostsExist || !livesExist){
     if(levelSelect == 0){
       winScreen();
+    } else {
+      addScore(PLAYERNAME,score);
+      outWDT();
     }
     return true;
   }else{
@@ -958,8 +965,8 @@ void movePlayer(uint8_t playerIndex,uint16_t newX,uint16_t newY){
 
 
 void movePlayerNunchuk(uint8_t playerIndex){
-    Serial.println("move own player");
-    // Serial.println(playerIndex);
+    //Serial.println("move own player");
+    // //Serial.println(playerIndex);
     uint16_t newX;
     uint16_t newY;
 
@@ -1019,7 +1026,7 @@ void movePlayerNunchuk(uint8_t playerIndex){
 
 
 void moveGhostNunchuk(uint8_t ghostIndex){
-    Serial.println("move own ghost");
+    //Serial.println("move own ghost");
     uint16_t newX;
     uint16_t newY;
 
@@ -1086,12 +1093,11 @@ void selectLevel(uint8_t level){
     levelSelect = 1;
     noCoins = true;
     noGhost = false;
-    // nunchukIsGhost = false;
-    // IrIsGhost = true;
+    nunchukIsGhost = false;
+    IrIsGhost = true;
 
-    // playerId = 0;
-    // IrId = 0;
-    
+    playerId = 0;
+    IrId = 0;
     break;
   }
 
@@ -1198,7 +1204,7 @@ void sendByte(uint8_t byte, bool address)
     for (uint8_t bit = 0; bit < 8; bit++)
     {
       sendNEC((byte >> bit) & 1);
-      // Serial.println(pulseDuration);
+      // //Serial.println(pulseDuration);
     }
   }
   if(address)
@@ -1206,7 +1212,7 @@ void sendByte(uint8_t byte, bool address)
     for (uint8_t bit = 0; bit < 4; bit++)
     {
       sendNEC((byte >> bit) & 1);
-      // Serial.println(pulseDuration);
+      // //Serial.println(pulseDuration);
     } 
   }
   
@@ -1224,7 +1230,7 @@ void sendCommand(uint8_t nunchukdata, uint8_t command)
 
 void moveOverIR(uint8_t playerIndex)
 {
-    Serial.println("move IR ghost");
+    //Serial.println("move IR ghost");
     uint16_t newX;
     uint16_t newY;
 
@@ -1288,12 +1294,11 @@ void textGhost(){
   tft.setCursor(260,190);
   tft.println("LEVEL");
 }
-void updateScore(uint16_t score){
+void updateScore(){
     tft.fillRect(255,10,50,40,BACKGROUND);
     tft.setCursor(265,35);
-    char printValue[10];
-    sprintf(printValue,"%04u",score);
-    tft.println(printValue);
+    sprintf(printValue2,"%04u",score);
+    tft.println(printValue2);
   }
 
 extern uint32_t scoreList[10];
@@ -1301,6 +1306,8 @@ void getHighscore(){
   tft.fillRect(245,75,60,40,BACKGROUND);
   tft.setCursor(265,95);
   char printValue[10];
+  //Serial.print("HS :");
+  //Serial.println(scoreList[9]);
   sprintf(printValue,"%04lu",scoreList[9]);
   tft.println(printValue);
 }
@@ -1326,7 +1333,7 @@ void showLives(){
 void valuesGhost(){
   tft.setTextSize(1);
   tft.setTextColor(TFT_WHITE);
-  updateScore(0);
+  updateScore();
   getHighscore();
   showLives();
   showLevel();
@@ -1434,13 +1441,13 @@ void printbits(uint8_t byte)
   {
     if(byte & (1<<i))
     {
-      Serial.print("1");
+      //Serial.print("1");
     } else {
-      Serial.print("0");
+      //Serial.print("0");
     }
     
   }
-  Serial.println(" ");
+  //Serial.println(" ");
   
 }
 
@@ -1476,4 +1483,22 @@ void winScreen(){
   while(NunChuckPosition[2] == 0){
     getNunchukPosition();
   }
+  NunChuckPosition[2] = 0;
+  NunChuckPosition[3] = 0;
 }
+//Watchdog
+void initWDT(){
+  cli();
+  MCUSR &= ~(1 << WDRF); // Clear the watchdog reset flag
+  WDTCSR |= (1 << WDCE) | (1 << WDE); // Enable the watchdog timer configuration
+  WDTCSR = (1 << WDIE) | (1 << WDP2) | (1 << WDP0); // Set the timeout to 0.5 second and enable interrupt mode 
+  sei();
+}
+void outWDT(){
+   WDTCSR &= ~(1 << WDIE); // Clear the Watchdog Interrupt Enable bit to disable the watchdog interrupt
+   score = 0; // Reset the score
+}
+ISR(WDT_vect){
+  score++;
+  // //Serial.println(score);
+  }
